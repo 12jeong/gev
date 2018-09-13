@@ -40,12 +40,12 @@ GEVnewtonRaphson <- function (x, theta0, alpha=1, expr = expr_mle, maxiter = 100
     hmat = matrix(eval(Hmat),3,3)
     new_theta <- old_theta - alpha*solve(hmat)%*%jvec
     del_theta = new_theta - old_theta
-    if ( new_theta[2] < 0 || !all(1+new_theta[3]*(x-new_theta[1])/new_theta[2]>0) ) {
-      alpha = min(alp[alp>(tol-old_theta[2])/del_theta[2] && (old_theta[3]+alp*del_theta[3])*
-                        (min(x)-(old_theta[1]-alp*del_theta[1])) > -(old_theta[2]+alp*del_theta[2])*tol])
-      new_theta <- old_theta - alpha*solve(hmat)%*%jvec
-      del_theta = new_theta - old_theta
-    }
+    # if ( new_theta[2] < 0 || !all(1+new_theta[3]*(x-new_theta[1])/new_theta[2]>0) ) {
+    #   alpha = min(alp[alp>(tol-old_theta[2])/del_theta[2] && (old_theta[3]+alp*del_theta[3])*
+    #                     (min(x)-(old_theta[1]-alp*del_theta[1])) > -(old_theta[2]+alp*del_theta[2])*tol])
+    #   new_theta <- old_theta - alpha*solve(hmat)%*%jvec
+    #   del_theta = new_theta - old_theta
+    # }
     if ( norm(as.matrix(del_theta)) < tol ) {    ### if (max(abs(del_theta)) < tol )
       break
     }

@@ -1,8 +1,8 @@
 rm( list = ls()); gc()
-setwd("C:/Users/MYCOM/Dropbox/Extreme value")
+setwd("C:/Users/uos/Dropbox/Extreme value/gev")
 library("Deriv")
 library("evd")
-source("./library/fgev.R")
+source("C:/Users/uos/Dropbox/Extreme value/library/fgev.R")
 
 # derivatives for mles
 Jaco1=Deriv(expression(f_density_gev(mu,sigma,k,x)),c("mu","sigma","k"))
@@ -123,7 +123,7 @@ GEVnewtonRaphson_reg2 <- function (x, z, theta0, expr, alpha=1, maxiter=1000, to
     jvec_beta = apply(eval(Jaco)[,1]*z,2,sum)
     #jvec_beta =colSums(z*c(grad_mu_mat(x , mu+z%*%old_beta , sigma, k)))
     hmat_beta = eval(Hmat)[1,1] *t(z)%*%z
-    new_beta <- old_beta - alpha*solve(hmat_beta)%*%jvec_beta
+    new_beta <- old_beta - 0.1*solve(hmat_beta)%*%jvec_beta
     
     cat("grad_beta::", jvec_beta,"\n")
     cat("beta:", new_beta, '\n')
@@ -215,7 +215,7 @@ GEVnewtonRaphson_reg3(x, z, theta0, expr, alpha=1, maxiter=1000)
 #### Beta newton method without GEVnewtonRaphson ####
 #### added dealing with Error term               ####
 
-GEVnewtonRaphson_reg3 <- function(xdata, z, theta0, expr, alpha=1, maxiter = 1000, tol = 1e-05) {
+GEVnewtonRaphson_reg4 <- function(xdata, z, theta0, expr, alpha=1, maxiter = 1000, tol = 1e-05) {
   
   if ( !all(1+theta0[3]*(x-theta0[1])/theta0[2]>0) ){
     warning("NaN produced in log by 'theta0'")
@@ -266,7 +266,7 @@ GEVnewtonRaphson_reg3 <- function(xdata, z, theta0, expr, alpha=1, maxiter = 100
   return(list(initial = theta0, root = c(new_theta,new_beta), step = niter, del = delta))
 }
 
-GEVnewtonRaphson_reg3(x, z, theta0, expr, alpha=0.1, maxiter=1000)
+GEVnewtonRaphson_reg4(x, z, theta0, expr, alpha=1, maxiter=1000)
 
 
 
