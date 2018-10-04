@@ -73,7 +73,7 @@ GEVnewtonRaphson <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter 
 }
 
 
-GEVnewtonRaphson_reg_test1 <- function (x, z, theta0, expr, step_theta=1, step_beta=1, maxiter=1000, tol = 1e-6)
+GEVnewtonRaphson_reg <- function (x, z, theta0, expr=expr_reg, step_theta=1, step_beta=1, maxiter=1000, tol = 1e-6)
 {
   old_theta <- theta0 
   old_beta <- rep(0,ncol(z))
