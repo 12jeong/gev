@@ -5,17 +5,6 @@ library("Deriv")
 library("evd")
 source("fgevlibrary.R")
 
-n = 1000
-p=2
-true_theta=c(100,40,0.1)
-true_beta = c(1,1)
-set.seed(1)
-eps = rgev(n,loc=true_theta[1], scale=true_theta[2], shape=true_theta[3])
-Z = matrix(rnorm(p*n),n,p)
-Y = Z%*%true_beta + eps 
-
-GEVnewtonRaphson_reg_test1(x=Y, z=Z, theta0=true_theta, expr=expr_reg, step_theta=1, step_beta=1, maxiter=2)
-
 ## check gradient and loss in 1st order approximation
 # GEVnewtonRaphson_reg_test2(x=Y, z=Z, theta0=true_theta, expr=expr_reg, step_theta=1, step_beta=0.5, maxiter=1000)
 
@@ -29,7 +18,6 @@ GEVnewtonRaphson_test <- function (x, theta0, step_theta=1, expr = expr_mle, max
   
   old_theta <- theta0
   niter <- 0
-  alp <- seq(from=0,to=100,by=1)/100
   Jaco <- expr$Jaco
   Hmat <- expr$Hmat
   for (i in 1:maxiter) {
@@ -50,7 +38,7 @@ GEVnewtonRaphson_test <- function (x, theta0, step_theta=1, expr = expr_mle, max
 }
 
 
-GEVnewtonRaphson_reg_test1 <- function (x, z, theta0, expr, step_theta=1, step_beta=1, maxiter=1000, tol = 1e-6)
+GEVnewtonRaphson_reg_test <- function (x, z, theta0, expr, step_theta=1, step_beta=1, maxiter=10, tol = 1e-6)
 {
   old_theta <- theta0 
   old_beta <- rep(0,ncol(z))
@@ -93,4 +81,19 @@ GEVnewtonRaphson_reg_test1 <- function (x, z, theta0, expr, step_theta=1, step_b
   }
   return(list(step = niter, initial = theta0, root = c(old_theta,old_beta), grad=c(fit_mle$grad,jvec_beta)))
 }
+
+
+###########################################################################################################
+###########################################################################################################
+
+n = 1000
+p=2
+true_theta=c(100,40,0.1)
+true_beta = c(1,-1)
+set.seed(1)
+eps = rgev(n,loc=true_theta[1], scale=true_theta[2], shape=true_theta[3])
+Z = matrix(rnorm(p*n),n,p)
+Y = Z%*%true_beta + eps 
+
+GEVnewtonRaphson_reg_test(x=Y, z=Z, theta0=true_theta, expr=expr_reg, step_theta=1, step_beta=0.1, maxiter=2)
 
