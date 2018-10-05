@@ -3,7 +3,7 @@ gev_positive = function(x,mu,sigma,k){
 }
 
 f_density_gev=function(mu,sigma,k,x){
-  sum(log(sigma)+(1+1/k)*log(1+k*(x-mu)/sigma)+(1+k*(x-mu)/sigma)^(-1/k))
+  log(sigma)+(1+1/k)*log(1+k*(x-mu)/sigma)+(1+k*(x-mu)/sigma)^(-1/k)
 }
 
 
@@ -37,6 +37,7 @@ Hmat2=Deriv(logl,c("mu","sigma","k"),n=c(hessian=2),combine="cbind")
 expr_reg <- list (Jaco = Jaco2, Hmat = Hmat2)
 
 
+# Finding MLE for stationary
 GEVnewtonRaphson <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter = 5000, tol = 1e-06) {
   
   if ( !all(1+theta0[3]*(x-theta0[1])/theta0[2]>0) ){
@@ -45,7 +46,6 @@ GEVnewtonRaphson <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter 
   
   old_theta <- theta0
   niter <- 0
-  alp <- seq(from=0,to=100,by=1)/100
   Jaco <- expr$Jaco
   Hmat <- expr$Hmat
   for (i in 1:maxiter) {
@@ -61,7 +61,7 @@ GEVnewtonRaphson <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter 
     ## debuging for computationally singular
     new_theta <- old_theta - step_theta * tryCatch(solve(hmat),
                                                    error= function(e) {solve(hmat+diag(tol,nrow(hmat)))}) %*%jvec
-    
+    old_theta = new_theta    
     # ## debuging for log1p NaNs produced
     # if ( new_theta[2] < 0 || any(1+new_theta[3]*(x-new_theta[1])/new_theta[2]<0) ) {
     #   del_theta <- new_theta - old_theta
@@ -73,7 +73,9 @@ GEVnewtonRaphson <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter 
 }
 
 
-GEVnewtonRaphson_reg <- function (x, z, theta0, expr=expr_reg, step_theta=1, step_beta=1, maxiter=1000, tol = 1e-6)
+
+# Finding MLE for nonstationary
+GEVnewtonRaphson_reg <- function (x, z, theta0, expr=expr_reg, step_theta=1, step_beta=1, maxiter=10, tol = 1e-6)
 {
   old_theta <- theta0 
   old_beta <- rep(0,ncol(z))
@@ -88,14 +90,13 @@ GEVnewtonRaphson_reg <- function (x, z, theta0, expr=expr_reg, step_theta=1, ste
     # theta update
     x_d = x- z %*% old_beta 
     mu=old_theta[1]; sigma=old_theta[2]; k=old_theta[3]
-    fit_mle <- GEVnewtonRaphson_test(x = x_d, theta0 = c(mu,sigma,k), step_theta=step_theta, maxiter=5000)
+    fit_mle <- GEVnewtonRaphson(x = x_d, theta0 = c(mu,sigma,k), step_theta=step_theta, maxiter=5000)
     new_theta = fit_mle$root
     
     # beta update
     for (j in 1:5000){
       mu=c(new_theta[1]+z%*%old_beta); sigma=new_theta[2]; k=new_theta[3]
       jvec_beta = apply(eval(Jaco)[,1]*z,2,sum)
-      cat("beta gradient:::",jvec_beta,'\n')
       if ( abs(max(jvec_beta)) < tol ) {   
         break
       }  
@@ -107,3 +108,4 @@ GEVnewtonRaphson_reg <- function (x, z, theta0, expr=expr_reg, step_theta=1, ste
   }
   return(list(step = niter, initial = theta0, root = c(old_theta,old_beta), grad=c(fit_mle$grad,jvec_beta)))
 }
+
