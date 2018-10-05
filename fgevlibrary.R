@@ -3,7 +3,7 @@ gev_positive = function(x,mu,sigma,k){
 }
 
 f_density_gev=function(mu,sigma,k,x){
-  log(sigma)+(1+1/k)*log(1+k*(x-mu)/sigma)+(1+k*(x-mu)/sigma)^(-1/k)
+  sum(log(sigma)+(1+1/k)*log(1+k*(x-mu)/sigma)+(1+k*(x-mu)/sigma)^(-1/k))
 }
 
 
