@@ -40,6 +40,7 @@ GEVnewtonRaphson_test <- function (x, theta0, step_theta=1, expr = expr_mle, max
 
 GEVnewtonRaphson_reg_test <- function (x, z, theta0, expr, step_theta=1, step_beta=1, maxiter=10, tol = 1e-6)
 {
+  z <- as.matrix(z)
   old_theta <- theta0 
   old_beta <- rep(0,ncol(z))
   niter <- 0
@@ -62,7 +63,7 @@ GEVnewtonRaphson_reg_test <- function (x, z, theta0, expr, step_theta=1, step_be
     # cat("theta_update:::",v1,'\n"')
     cat("- - - - - - - - - - - - - - - - - - - - - - - -",'\n')
     # beta update
-    for (j in 1:5000){
+    for (j in 1:100){
     mu=c(new_theta[1]+z%*%old_beta); sigma=new_theta[2]; k=new_theta[3]
     jvec_beta = apply(eval(Jaco)[,1]*z,2,sum)
     cat("beta gradient:::",jvec_beta,'\n')

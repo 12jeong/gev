@@ -24,6 +24,8 @@ lossfun = function(x,mu,sigma,k){
   sum(v)
 }
 
+
+
 # derivatives for mles
 Jaco1=Deriv(expression(f_density_gev(mu,sigma,k,x)),c("mu","sigma","k"))
 Hmat1=Deriv(expression(f_density_gev(mu,sigma,k,x)),c("mu","sigma","k"),n=c(hessian=2))
@@ -36,6 +38,18 @@ Jaco2=Deriv(logl,c("mu","sigma","k"),combine="cbind")
 Hmat2=Deriv(logl,c("mu","sigma","k"),n=c(hessian=2),combine="cbind")
 expr_reg <- list (Jaco = Jaco2, Hmat = Hmat2)
 
+# gradient and hessian for full update in newtonraphson + reg
+GEVgradient <- function(j,x,z,mu,sigma,k){
+  apply(cbind(eval(j),eval(j)[,1]*z),2,sum)
+}
+
+GEVhessian <- function(h,x,z,mu,sigma,k){
+  h1=matrix(apply(eval(h),2,sum),3,3)
+  h2=rbind(apply(h1[1,1]*z,2,sum), apply(h1[1,2]*z,2,sum), apply(h1[1,3]*z,2,sum))
+  h3=t(h2)
+  h4=h1[1,1]*t(z)%*%z
+  rbind(cbind(h1,h2),cbind(h3,h4)) 
+}
 
 # Finding MLE for stationary
 GEVnewtonRaphson <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter = 5000, tol = 1e-06) {
@@ -77,6 +91,7 @@ GEVnewtonRaphson <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter 
 # Finding MLE for nonstationary
 GEVnewtonRaphson_reg <- function (x, z, theta0, expr=expr_reg, step_theta=1, step_beta=1, maxiter=10, tol = 1e-6)
 {
+  z <- as.matrix(z)
   old_theta <- theta0 
   old_beta <- rep(0,ncol(z))
   niter <- 0
@@ -94,7 +109,7 @@ GEVnewtonRaphson_reg <- function (x, z, theta0, expr=expr_reg, step_theta=1, ste
     new_theta = fit_mle$root
     
     # beta update
-    for (j in 1:5000){
+    for (j in 1:100){
       mu=c(new_theta[1]+z%*%old_beta); sigma=new_theta[2]; k=new_theta[3]
       jvec_beta = apply(eval(Jaco)[,1]*z,2,sum)
       if ( abs(max(jvec_beta)) < tol ) {   
