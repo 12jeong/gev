@@ -5,9 +5,6 @@
 # library("evd")
 # source("fgevlibrary.R")
 
-## check gradient and loss in 1st order approximation
-# GEVnewtonRaphson_reg_test2(x=Y, z=Z, theta0=true_theta, expr=expr_reg, step_theta=1, step_beta=0.5, maxiter=1000)
-
 # x=Y; z=Z; theta0=true_theta; expr=expr_reg ; step_tehta=1; step_beta=0.5 ;maxiter=1000; tol=1e-6
 
 GEVnewtonRaphson_test <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter = 5000, tol = 1e-06) {
@@ -70,7 +67,7 @@ GEVnewtonRaphson_reg_test <- function (x, z, theta0, expr, step_theta=1, step_be
       if ( abs(max(jvec_beta)) < tol ) {   
         break
       }  
-    hmat_beta = eval(Hmat)[1,1] *t(z)%*%z
+    hmat_beta = sum(eval(Hmat)[,1]) *t(z)%*%z
     new_beta <- old_beta - step_beta *solve(hmat_beta)%*%jvec_beta
     old_beta <- new_beta
     }
@@ -82,6 +79,42 @@ GEVnewtonRaphson_reg_test <- function (x, z, theta0, expr, step_theta=1, step_be
     cat("===========================================",'\n')
   }
   return(list(step = niter, initial = theta0, root = c(old_theta,old_beta), grad=c(fit_mle$grad,jvec_beta)))
+}
+
+
+GEV_regfull_test <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, maxiter = 1000, tol = 1e-05) {
+  old_theta <- c(theta0,beta0)
+  niter <- 0
+  alp <- seq(from=0,to=100,by=1)/100
+  
+  Jaco <- expr$Jaco
+  Hmat <- expr$Hmat
+  
+  for (i in 1:maxiter) {
+    niter = niter + 1
+    cat("niter:::", niter,  '\n')
+    mu=c(old_theta[1]+z%*%old_theta[-c(1,2,3)]); sigma=old_theta[2]; k=old_theta[3]
+    
+    grad=apply(cbind(eval(Jaco),eval(Jaco)[,1]*z),2,sum)
+    if (max(abs(grad))<1e-07){
+      break
+    }
+    cat("grad:::",grad,'\n')
+    
+    hess = GEVhessian(x,z,mu,sigma,k)
+    
+    new_theta = old_theta - alpha*solve(hess)%*%grad
+    
+    # new_theta = old_theta - alpha*grad
+    cat("new_theta:::",new_theta,'\n')
+    
+    v = lossfun(x-z%*%new_theta[-c(1,2,3)],mu=new_theta[1],sigma=new_theta[2],k=new_theta[3])
+    cat("loss_update:::", v, '\n')
+    
+    old_theta = new_theta
+    cat("===========================================",'\n')    
+  }
+  return(list(initial = theta0, root = c(old_theta), step = niter))
 }
 
 
