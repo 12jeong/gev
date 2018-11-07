@@ -19,7 +19,7 @@ GEVnewtonRaphson_test <- function (x, theta0, step_theta=1, expr = expr_mle, max
   Hmat <- expr$Hmat
   for (i in 1:maxiter) {
     niter = niter + 1
-    mu=old_theta[1]; sigma=old_theta[2]; k=old_theta[3]
+    mu=old_theta[1]; s=old_theta[2]; k=old_theta[3]
     jvec = eval(Jaco)
     cat("theta gradient:::",jvec,'\n')
     if ( abs(max(jvec)) < tol ) {    
@@ -51,8 +51,8 @@ GEVnewtonRaphson_reg_test <- function (x, z, theta0, expr, step_theta=1, step_be
     
     # theta update
     x_d = x- z %*% old_beta 
-    mu=old_theta[1]; sigma=old_theta[2]; k=old_theta[3]
-    fit_mle <- GEVnewtonRaphson_test(x = x_d, theta0 = c(mu,sigma,k), step_theta=step_theta, maxiter=5000)
+    mu=old_theta[1]; s=old_theta[2]; k=old_theta[3]
+    fit_mle <- GEVnewtonRaphson_test(x = x_d, theta0 = c(mu,s,k), step_theta=step_theta, maxiter=5000)
     new_theta = fit_mle$root
     cat("new_theta:::",new_theta,'\n')
     # cat("theta gradient:::",fit_mle$grad,'\n')
@@ -61,7 +61,7 @@ GEVnewtonRaphson_reg_test <- function (x, z, theta0, expr, step_theta=1, step_be
     cat("- - - - - - - - - - - - - - - - - - - - - - - -",'\n')
     # beta update
     for (j in 1:100){
-    mu=c(new_theta[1]+z%*%old_beta); sigma=new_theta[2]; k=new_theta[3]
+    mu=c(new_theta[1]+z%*%old_beta); s=new_theta[2]; k=new_theta[3]
     jvec_beta = apply(eval(Jaco)[,1]*z,2,sum)
     cat("beta gradient:::",jvec_beta,'\n')
       if ( abs(max(jvec_beta)) < tol ) {   
@@ -93,7 +93,7 @@ GEV_regfull_test <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, maxit
   for (i in 1:maxiter) {
     niter = niter + 1
     cat("niter:::", niter,  '\n')
-    mu=c(old_theta[1]+z%*%old_theta[-c(1,2,3)]); sigma=old_theta[2]; k=old_theta[3]
+    mu=c(old_theta[1]+z%*%old_theta[-c(1,2,3)]); s=old_theta[2]; k=old_theta[3]
     
     grad=apply(cbind(eval(Jaco),eval(Jaco)[,1]*z),2,sum)
     if (max(abs(grad))<1e-07){
@@ -101,14 +101,14 @@ GEV_regfull_test <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, maxit
     }
     cat("grad:::",grad,'\n')
     
-    hess = GEVhessian(x,z,mu,sigma,k)
+    hess = GEVhessian(x,z,mu,s,k)
     
     new_theta = old_theta - alpha*solve(hess)%*%grad
     
     # new_theta = old_theta - alpha*grad
     cat("new_theta:::",new_theta,'\n')
     
-    v = lossfun(x-z%*%new_theta[-c(1,2,3)],mu=new_theta[1],sigma=new_theta[2],k=new_theta[3])
+    v = lossfun(x-z%*%new_theta[-c(1,2,3)],mu=new_theta[1],s=new_theta[2],k=new_theta[3])
     cat("loss_update:::", v, '\n')
     
     old_theta = new_theta

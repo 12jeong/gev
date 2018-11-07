@@ -1,33 +1,29 @@
-gev_positive = function(x,mu,sigma,k){
-  1+k*(x-mu)/sigma
+gev_positive = function(x,mu,s,k){
+  1+k*(x-mu)/s
 }
 
-f_density_gev=function(mu,sigma,k,x){
-  sum(log(sigma)+(1+1/k)*log(1+k*(x-mu)/sigma)+(1+k*(x-mu)/sigma)^(-1/k))
-}
-
-lossfun = function(x,mu,sigma,k){
-  v = log(sigma)+(1+1/k)*log(1+k*(x-mu)/sigma)+(1+k*(x-mu)/sigma)^(-1/k)  
+lossfun = function(x,mu,s,k){
+  v = log(s)+(1+1/k)*log(1+k*(x-mu)/s)+(1+k*(x-mu)/s)^(-1/k)  
   sum(v)
 }
 
 # derivatives for mles
-Jaco1=Deriv(expression(f_density_gev(mu,sigma,k,x)),c("mu","sigma","k"))
-Hmat1=Deriv(expression(f_density_gev(mu,sigma,k,x)),c("mu","sigma","k"),n=c(hessian=2))
+Jaco1=Deriv(expression(f_density_gev(mu,s,k,x)),c("mu","s","k"))
+Hmat1=Deriv(expression(f_density_gev(mu,s,k,x)),c("mu","s","k"),n=c(hessian=2))
 expr_mle <- list (Jaco = Jaco1, Hmat = Hmat1)
 
 # derivatives for regression 
-logl=expression(log(sigma)+(1+1/k)*log(1+k*(x-mu)/sigma)+(1+k*(x-mu)/sigma)^(-1/k))
-Jaco2=Deriv(logl,c("mu","sigma","k"),combine="cbind")
-Hmat2=Deriv(logl,c("mu","sigma","k"),n=c(hessian=2),combine="cbind")
+logl=expression(log(s)+(1+1/k)*log(1+k*(x-mu)/s)+(1+k*(x-mu)/s)^(-1/k))
+Jaco2=Deriv(logl,c("mu","s","k"),combine="cbind")
+Hmat2=Deriv(logl,c("mu","s","k"),n=c(hessian=2),combine="cbind")
 expr_reg <- list (Jaco = Jaco2, Hmat = Hmat2)
 
 # gradient and hessian for full update in newtonraphson + reg
-GEVgradient <- function(x,z,mu,sigma,k){
+GEVgradient <- function(x,z,mu,s,k){
   apply(cbind(eval(expr_reg$Jaco),eval(expr_reg$Jaco)[,1]*z),2,sum)
 }
 
-GEVhessian <- function(x,z,mu,sigma,k){
+GEVhessian <- function(x,z,mu,s,k){
   evalh = eval(expr_reg$Hmat)
   h1=matrix(apply(evalh,2,sum),3,3)
   h2=rbind(apply(evalh[,1]*z,2,sum), apply(evalh[,2]*z,2,sum), apply(evalh[,3]*z,2,sum))
@@ -54,7 +50,7 @@ GEVnewtonRaphson <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter 
   Hmat <- expr$Hmat
   for (i in 1:maxiter) {
     niter = niter + 1
-    mu=old_theta[1]; sigma=old_theta[2]; k=old_theta[3]
+    mu=old_theta[1]; s=old_theta[2]; k=old_theta[3]
     jvec = eval(Jaco)
     if ( abs(max(jvec)) < tol ) {    
       break
@@ -94,13 +90,13 @@ GEVnewtonRaphson_reg <- function (x, z, theta0, expr=expr_reg, step_theta=1, ste
     
     # theta update
     x_d = x- z %*% old_beta 
-    mu=old_theta[1]; sigma=old_theta[2]; k=old_theta[3]
-    fit_mle <- GEVnewtonRaphson(x = x_d, theta0 = c(mu,sigma,k), step_theta=step_theta, maxiter=5000)
+    mu=old_theta[1]; s=old_theta[2]; k=old_theta[3]
+    fit_mle <- GEVnewtonRaphson(x = x_d, theta0 = c(mu,s,k), step_theta=step_theta, maxiter=5000)
     new_theta = fit_mle$root
     
     # beta update
     for (j in 1:100){
-      mu=c(new_theta[1]+z%*%old_beta); sigma=new_theta[2]; k=new_theta[3]
+      mu=c(new_theta[1]+z%*%old_beta); s=new_theta[2]; k=new_theta[3]
       jvec_beta = apply(eval(Jaco)[,1]*z,2,sum)
       if ( abs(max(jvec_beta)) < tol ) {   
         break
@@ -125,13 +121,13 @@ GEV_regfull <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, maxiter = 
   
   for (i in 1:maxiter) {
     niter = niter + 1
-    mu=c(old_theta[1]+z%*%old_theta[-c(1,2,3)]); sigma=old_theta[2]; k=old_theta[3]
+    mu=c(old_theta[1]+z%*%old_theta[-c(1,2,3)]); s=old_theta[2]; k=old_theta[3]
     
     grad=apply(cbind(eval(Jaco),eval(Jaco)[,1]*z),2,sum)
     if (max(abs(grad))<1e-07){
       break
     }
-    hess = GEVhessian(x,z,mu,sigma,k)
+    hess = GEVhessian(x,z,mu,s,k)
     new_theta = old_theta - alpha*solve(hess)%*%grad
     
     old_theta = new_theta
