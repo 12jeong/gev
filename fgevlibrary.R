@@ -2,6 +2,10 @@ gev_positive = function(x,mu,s,k){
   1+k*(x-mu)/s
 }
 
+f_density_gev=function(mu,sigma,k,x){
+  sum(log(sigma)+(1+1/k)*log(1+k*(x-mu)/sigma)+(1+k*(x-mu)/sigma)^(-1/k))
+}
+
 lossfun = function(x,mu,s,k){
   v = log(s)+(1+1/k)*log(1+k*(x-mu)/s)+(1+k*(x-mu)/s)^(-1/k)  
   sum(v)
@@ -131,7 +135,6 @@ GEV_regfull <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, maxiter = 
     new_theta = old_theta - alpha*solve(hess)%*%grad
     
     old_theta = new_theta
-    
   }
   return(list(initial = theta0, root = c(old_theta), step = niter))
 }

@@ -13,7 +13,7 @@ true_theta=c(100,40,0.1)
 true_beta = c(1)
 
 result <- list()
-for ( s in c(1:50) ) {
+for ( s in c(1:100) ) {
 set.seed(s)
 eps = rgev(n,loc=true_theta[1], scale=true_theta[2], shape=true_theta[3])
 Z = matrix(rnorm(p*n),n,p)
@@ -39,17 +39,27 @@ Y_tilda2 <- Y - Z %*% est_beta2[-1]
 est_theta2 <- GEVnewtonRaphson(x=Y_tilda2,theta0=true_theta,expr=expr_mle,maxiter=1,step_theta=1)
 result_rq <- c(est_theta2$root,est_beta2[-1])
 
-#####
+##### second approximation after lm&qr
 result_lm_second <- GEV_regfull(x=Y,z=Z,theta0=est_theta1$root,beta0=est_beta1[-1],alpha=1,maxiter=1)$root
 result_rq_second <- GEV_regfull(x=Y,z=Z,theta0=est_theta2$root,beta0=est_beta2[-1],alpha=1,maxiter=1)$root
 
 result[[s]] <- rbind(result_newton,result_lm,result_lm_second,result_rq,result_rq_second)
 }
 
-result
+result[[1]][1,4]
 
+# boxplot(do.call('rbind',lapply(result,function(x) x[1,4]) ))
 
-# save(result,file="simulation1101.Rdata")
+result_z <- list()
+result_z[["newton"]] <- unlist(lapply(result,function(x) x[1,4]))
+result_z[["lm"]] <- unlist(lapply(result,function(x) x[2,4]))
+result_z[["lm+second"]] <- unlist(lapply(result,function(x) x[3,4]))
+result_z[["qr"]] <- unlist(lapply(result,function(x) x[4,4]))
+result_z[["qr+second"]] <- unlist(lapply(result,function(x) x[5,4]))
+
+boxplot(result_z)
+
+# save(result,file="simulation1108.Rdata")
 
 # load("C:/Users/uos/Dropbox/Extreme value/gev/simulation_p1.Rdata")
 # load("C:/Users/uos/Dropbox/Extreme value/gev/simulation_p2.Rdata")
