@@ -49,7 +49,7 @@ GEVnewtonRaphson <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter 
   }
   old_theta <- theta0
   niter <- 0
-  alp <- seq(from=0,to=100,by=1)/100
+  alp <- 1-seq(from=0,to=100,by=1)/100
   
   Jaco <- expr$Jaco
   Hmat <- expr$Hmat
@@ -70,19 +70,12 @@ GEVnewtonRaphson <- function (x, theta0, step_theta=1, expr = expr_mle, maxiter 
     if (any(gev_positive(x=x, mu=new_theta[1],s=new_theta[2],k=new_theta[3])<0)) {
       del_theta <- new_theta-old_theta
       for (i in 1:length(alp)){
-        alpha=alp[length(alp)-i]
-        if(all(gev_positive(x=x, mu=old_theta[1]+alpha*del_theta[1]+alpha*del_theta[-c(1,2,3)],s=old_theta[2]+alpha*del_theta[2],k=old_theta[3]+alpha*del_theta[3])>0)){
+        alpha=alp[i]
+        if(all(gev_positive(x=x, mu=old_theta[1]+alpha*del_theta[1],s=old_theta[2]+alpha*del_theta[2],k=old_theta[3]+alpha*del_theta[3])>0)){
           break
         }
       }
       new_theta = old_theta - alpha*solve(hmat)%*%jvec
-    }
-    
-    # loss가 초반에 너무 뛸경우 방지 -수정 필요
-    oldloss <- lossfun(x,mu=old_theta[1],s=old_theta[2],k=old_theta[3]) 
-    newloss <- lossfun(x,mu=new_theta[1],s=new_theta[2],k=new_theta[3]) 
-    if (newloss > oldloss || is.na(newloss)){
-      new_theta = old_theta - 0.05*solve(hmat)%*%jvec
     }
     
     old_theta = new_theta   
@@ -107,7 +100,7 @@ GEVnewtonRaphson_reg <- function (x, z, theta0, expr=expr_reg, step_theta=1, ste
   old_theta <- theta0 
   old_beta <- rep(0,ncol(z))
   niter <- 0
-  alp <- seq(from=0,to=100,by=1)/100
+  alp <- 1-seq(from=0,to=100,by=1)/100
   
   Jaco <- expr$Jaco
   Hmat <- expr$Hmat
@@ -142,7 +135,7 @@ GEVnewtonRaphson_reg <- function (x, z, theta0, expr=expr_reg, step_theta=1, ste
 GEV_regfull <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, maxiter = 1000, tol = 1e-05) {
   old_theta <- c(theta0,beta0)
   niter <- 0
-  alp <- seq(from=0,to=100,by=1)/100
+  alp <- 1-seq(from=0,to=100,by=1)/100
   
   Jaco <- expr$Jaco
   Hmat <- expr$Hmat
@@ -161,7 +154,7 @@ GEV_regfull <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, maxiter = 
     if (any(gev_positive(x=x, mu=new_theta[1]+z%*%new_theta[-c(1,2,3)],s=new_theta[2],k=new_theta[3])<0)) {
       del_theta <- new_theta-old_theta
       for (i in 1:length(alp)){
-        alpha=alp[length(alp)-i]
+        alpha=alp[i]
         if(all(gev_positive(x=x, mu=old_theta[1]+alpha*del_theta[1]+z%*%old_theta[-c(1,2,3)]+alpha*del_theta[-c(1,2,3)],s=old_theta[2]+alpha*del_theta[2],k=old_theta[3]+alpha*del_theta[3])>0)){
           break
         }
@@ -169,12 +162,8 @@ GEV_regfull <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, maxiter = 
       new_theta = old_theta - alpha*solve(hess)%*%grad
     }
     
-    # loss가 초반에 너무 뛸경우 방지 -수정 필요
-    oldloss <- lossfun(x-z%*%old_theta[-c(1,2,3)],mu=old_theta[1],s=old_theta[2],k=old_theta[3]) 
-    newloss <- lossfun(x-z%*%new_theta[-c(1,2,3)],mu=new_theta[1],s=new_theta[2],k=new_theta[3]) 
-    if (newloss > oldloss || is.na(newloss)){
-      new_theta = old_theta - 0.05*solve(hess)%*%grad
-    }
+    
+    
     
     old_theta = new_theta
   
