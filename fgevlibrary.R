@@ -162,9 +162,6 @@ GEV_regfull <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, maxiter = 
       new_theta = old_theta - alpha*solve(hess)%*%grad
     }
     
-    
-    
-    
     old_theta = new_theta
   
   }

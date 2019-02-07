@@ -13,7 +13,7 @@ GEVnewtonRaphson_test <- function (x, theta0, step_theta=1, expr = expr_mle, max
   }
   old_theta <- theta0
   niter <- 0
-  alp <- seq(from=0,to=100,by=1)/100
+  alp <- 1-seq(from=0,to=100,by=1)/100
   
   Jaco <- expr$Jaco
   Hmat <- expr$Hmat
@@ -39,14 +39,7 @@ GEVnewtonRaphson_test <- function (x, theta0, step_theta=1, expr = expr_mle, max
       }
       new_theta = old_theta - alpha*solve(hmat)%*%jvec
     }
-    
-    # loss가 초반에 너무 뛸경우 방지 -수정 필요
-    oldloss <- lossfun(x,mu=old_theta[1],s=old_theta[2],k=old_theta[3]) 
-    newloss <- lossfun(x,mu=new_theta[1],s=new_theta[2],k=new_theta[3]) 
-    if (newloss > oldloss || is.na(newloss)){
-      new_theta = old_theta - 0.05*solve(hmat)%*%jvec
-    }
-    
+  
     old_theta = new_theta
   }
   return(list(initial = theta0, root = c(old_theta), step = niter, grad=jvec)) 
@@ -137,15 +130,6 @@ GEV_regfull_test <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, maxit
       }
       new_theta = old_theta - alpha*solve(hess)%*%grad
     }
-    
-    # # loss가 초반에 너무 뛸경우 방지 -수정 필요
-    # oldloss <- lossfun(x-z%*%old_theta[-c(1,2,3)],mu=old_theta[1],s=old_theta[2],k=old_theta[3]) 
-    # newloss <- lossfun(x-z%*%new_theta[-c(1,2,3)],mu=new_theta[1],s=new_theta[2],k=new_theta[3]) 
-    # if (newloss > oldloss || is.na(newloss)){
-    #   new_theta = old_theta - 0.05*solve(hess)%*%grad
-    # }
-    # 
-    # new_theta = old_theta - alpha*grad
     cat("new_theta:::",new_theta,'\n')
     
     

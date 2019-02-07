@@ -48,7 +48,7 @@ GEVnewtonRaphson_step1 <- function (x, theta0, step_theta=1, expr = expr_mle, to
     # }
     
   
-  return(list(initial = theta0, root = c(new_theta), oldloss = oldloss, newloss = newloss , stepsize = step_theta))
+  return(list(initial = theta0, root = c(new_theta), oldloss = oldloss, newloss = newloss , hess=hmat))
 }
 
 
@@ -89,7 +89,7 @@ GEV_regfull_step1 <- function (x, z, theta0, beta0, expr=expr_reg, alpha=1, tol 
 
     
   
-  return(list(initial = theta0, root = c(new_theta), oldloss = oldloss, newloss = newloss , stepsize = alpha))
+  return(list(initial = theta0, root = c(new_theta), oldloss = oldloss, newloss = newloss ,hess=hess))
 }
 
 
