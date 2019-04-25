@@ -1,5 +1,5 @@
 rm( list = ls()); gc()
-setwd("C:\\Users\\UOS\\Dropbox\\Extreme value\\kma_data")
+setwd("\\kma_data")
 load("kma_data.Rdata")
 
 if(!require(dplyr)){ install.packages('dplyr')}; require(dplyr)
