@@ -1,5 +1,5 @@
 rm( list = ls()); gc()
-setwd("C:\\Users\\UOS\\Dropbox\\Extreme value\\kma_data")
+setwd("C:\\Users\\UOS\\Documents\\GITHUB\\gev\\kma_data")
 load("kma_data.Rdata")
 
 if(!require(dplyr)){ install.packages('dplyr')}; require(dplyr)
@@ -29,5 +29,11 @@ table(Pr_46$stnlds) # 60개 지점
 Pr_46 %>% group_by(stnlds,lat,long) %>% summarise(minyear=min(as.numeric(obsyear)), maxyear=max(as.numeric(obsyear))) %>% View
 Pr_46 <- as.data.frame(Pr_46)
 
+# 제주도 3개 지점, 울릉도 1개 지점 제외
+unique(Pr_46[Pr_46$lat < 34,]$stnlds)
+unique(Pr_46[Pr_46$long > 130,]$stnlds)
+Pr_46 <- Pr_46 %>% filter(!stnlds %in% c(184,188,189,115))
+
 # save(Pr_46, file="Pr_46.RData")
+
 

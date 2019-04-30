@@ -1,0 +1,79 @@
+---
+title: "ex_bsreg"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+penalty $\lambda$=(0,0.1,1)
+
+```{r}
+library(fda)
+load("ex_bsreg_1D.RData")
+load("C:\\Users\\UOS\\Dropbox\\Extreme value\\Pr_48.RData")
+ss <- split.data.frame(Pr_48,Pr_48$stnlds)
+xlist <- lapply(ss,"[[","pr")
+ns <- length(unique(Pr_48$stnlds))
+
+# order=4, nbasis=7, quantile knots 
+x_bsobj <- create.bspline.basis(range(Pr_48$long),breaks=quantile(Pr_48$long,prob = seq(0, 1, length = 5)))
+zlist1 <- list()
+for (i in 1:ns){
+  xbs <- eval.basis(ss[[i]]$long,x_bsobj)
+  zlist1[[i]] <- xbs
+}
+Om <- bsplinepen(x_bsobj) 
+Om # 7 X 7
+
+p <- ncol(zlist1[[1]])
+x <- unique(Pr_48$long)
+xbss <- eval.basis(x,x_bsobj)
+z1 <- xbss %*% tail(result1,p)
+z2 <- xbss %*% tail(result2,p)
+z3 <- xbss %*% tail(result3,p)
+
+matplot(x,xbss)
+plot(x,z1,col="#999999")
+points(x,z2,col="#E69F00")
+points(x,z3,col="#56B4E9")
+```
+
+```{r}
+x_bsobj <- create.bspline.basis(range(Pr_48$long),breaks=quantile(Pr_48$long,prob = seq(0, 1, length = 5)))
+y_bsobj <- create.bspline.basis(range(Pr_48$lat),breaks=quantile(Pr_48$lat,prob = seq(0, 1, length = 5)))
+
+zlist <- list()
+for (i in 1:ns){
+  xbs <- eval.basis(ss[[i]]$long,x_bsobj)
+  ybs <- eval.basis(ss[[i]]$lat,y_bsobj)
+  tensorbs <- do.call('cbind', lapply(1:ncol(xbs), function(i) xbs[, i] * ybs)) 
+  zlist[[i]] <- tensorbs 
+}
+Fmat <- kronecker(bsplinepen(x_bsobj,Lfdobj=2),bsplinepen(y_bsobj,Lfdobj=0))
+Gmat <- kronecker(bsplinepen(x_bsobj,Lfdobj=0),bsplinepen(y_bsobj,Lfdobj=2))
+Hmat <- kronecker(bsplinepen(x_bsobj,Lfdobj=1),bsplinepen(y_bsobj,Lfdobj=1))
+Om <- Fmat+2*Gmat+Hmat
+
+
+p <- ncol(zlist[[1]])
+x <- unique(Pr_48$long)
+y <- unique(Pr_48$lat)
+xbss <- eval.basis(x,x_bsobj)
+ybss <- eval.basis(y,y_bsobj)
+tensorbss <- do.call('cbind', lapply(1:ncol(xbss), function(i) xbss[, i] * ybss)) 
+
+load("ex_bsreg_2D.RData")
+z1 <- tensorbss %*% tail(result1,p)
+z2 <- tensorbss %*% tail(result2,p)
+z3 <- tensorbss %*% tail(result3,p)
+
+library(scatterplot3d)
+par(mfrow=c(1,3))
+scatterplot3d(x,y,z1,scale.y=0.6,angle=10)
+scatterplot3d(x,y,z2,scale.y=0.6,angle=10)
+scatterplot3d(x,y,z3,scale.y=0.6,angle=10)
+
+
+```
