@@ -4,15 +4,16 @@ library(evd)
 library(Deriv)
 source("sgevlibrary.R")
 setwd("C:\\Users\\UOS\\Documents\\GITHUB\\gev")
+load("kma_data\\Pr_46.RData")
 
-ss <- split.data.frame(Pr_48,Pr_48$stnlds)
+ss <- split.data.frame(Pr_46,Pr_46$stnlds)
 xlist <- lapply(ss,"[[","pr")
-ns <- length(unique(Pr_48$stnlds))
+ns <- length(unique(Pr_46$stnlds))
 
 # create.bspline.basis : nbasis = norder + length(breaks) -2
 # order=4, quantile knots, nbasis=7, 
-x_bsobj <- create.bspline.basis(range(Pr_48$long),breaks=quantile(Pr_48$long,prob = seq(0, 1, length = 5)))
-y_bsobj <- create.bspline.basis(range(Pr_48$lat),breaks=quantile(Pr_48$lat,prob = seq(0, 1, length = 5)))
+x_bsobj <- create.bspline.basis(range(Pr_46$long),breaks=quantile(Pr_46$long,prob = seq(0, 1, length = 5)))
+y_bsobj <- create.bspline.basis(range(Pr_46$lat),breaks=quantile(Pr_46$lat,prob = seq(0, 1, length = 5)))
 
 zlist <- list()
 for (i in 1:ns){
@@ -47,22 +48,29 @@ Om <- Fmat+2*Gmat+Hmat
 optim_controlList = list()
 optim_controlList$maxit = 1e+3
 
+matt = matrix(0,nrow=ns*(ns-1),ncol=ns)
+k = 1
+for (i in (1: (ns-1))){
+  for (j in ((i+1) :ns)){
+    matt[k,i] = 1
+    matt[k,j] = -1
+    k = k+1
+  }  
+}
+mat = t(matt) %*% matt
 
 # result1 <- round(gevreg_m(xlist, zlist, lambda = 0, Om=Om, method="B-spline"),3)
 # result2 <- round(gevreg_m(xlist, zlist, lambda = 0.01, Om=Om, method="B-spline"),3)
 result3 <- round(gevreg_m(xlist, zlist, lambda = 1, lambda2=1, Om=Om, mat=mat, method="B-spline"),3)
 result4 <- round(gevreg_m(xlist, zlist, lambda = 0.1, lambda2=1, Om=Om, mat=mat, method="B-spline"),3)
 
-# save(result1,result2,result3,file="result_bsreg.RData")
-# load("result_bsreg.RData")
-
 # result1[1:(ns*3)]
 # result2[1:(ns*3)]
 # result3[1:(ns*3)]
 
 p <- ncol(zlist[[1]])
-x <- unique(Pr_48$long)
-y <- unique(Pr_48$lat)
+x <- unique(Pr_46$long)
+y <- unique(Pr_46$lat)
 xbss <- eval.basis(x,x_bsobj)
 ybss <- eval.basis(y,y_bsobj)
 tensorbss <- do.call('cbind', lapply(1:ncol(xbss), function(i) xbss[, i] * ybss)) 
@@ -89,5 +97,5 @@ scatterplot3d(x,y,z2,scale.y=0.6,angle=10)
 scatterplot3d(x,y,z3,scale.y=0.6,angle=10)
 
 
-# save(result1,result2,result3,file="ex_bsreg_2D.RData")
-load("ex_bsreg_2D.RData")
+save(result1,result2,result3,result4,file="ex_bsreg_2D.RData")
+# load("ex_bsreg_2D.RData")
