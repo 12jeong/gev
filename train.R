@@ -7,19 +7,18 @@ library(dplyr)
 
 ylat = unique(Pr_46$lat)
 xlong = unique(Pr_46$long)
-
 plot(xlong,ylat)
-summary(Pr_46$lat)
-summary(Pr_46$long)
+
 ns = length(unique(Pr_46$stnlds)) # 56개
 
-set.seed(3)
-kcluster = kmeans(data.frame(ylat,xlong), 5)
-plot(xlong,ylat,col=kcluster$cluster)
-kcluster$size
 
+# 1973~2012년 데이터를 k-folds 5개 (순서대로)
 train = Pr_46 %>% filter(obsyear < 2013)
-train$k = rep(kcluster$cluster,each=nrow(train)/ns)
+# ksize = 8
+# train$k = rep(c(1:5),each=ksize)
+set.seed(2018)
+folds = sample(cut(1:40,breaks=5,labels=FALSE),40)
+train$k = rep(folds,times=ns)
 test = Pr_46 %>% filter(obsyear >= 2013)
 
 # design matrix for v3 (m0 statinary?)
@@ -40,8 +39,8 @@ dim(matfunc(ns))
 
 ss = split.data.frame(train,train$stnlds)
 xlist = lapply(ss,"[[","pr")
-x_bsobj = create.bspline.basis(range(train$long),breaks=quantile(train$long,prob = seq(0, 1, length = 3)))
-y_bsobj = create.bspline.basis(range(train$lat),breaks=quantile(train$lat,prob = seq(0, 1, length = 3)))
+x_bsobj = create.bspline.basis(range(train$long),breaks=quantile(train$long,prob = seq(0, 1, length = 4)))
+y_bsobj = create.bspline.basis(range(train$lat),breaks=quantile(train$lat,prob = seq(0, 1, length = 4)))
 
 zlist = list()
 for (i in 1:ns){
@@ -51,7 +50,7 @@ for (i in 1:ns){
   zlist[[i]] = tensorbs 
 }
 
-dim(zlist[[1]]) # (frist)stnlds 2D-splines tensor, nbasis = 5 x 5
+dim(zlist[[1]]) # (frist)stnlds 2D-splines tensor, nbasis = df x df
 
 # Omega matrix
 Fmat = kronecker(bsplinepen(x_bsobj,Lfdobj=2),bsplinepen(y_bsobj,Lfdobj=0))
@@ -65,77 +64,98 @@ optim_controlList$maxit = 1e+3
 
 
 
-
-
-
 ######### k-folds cross validation ##########
 lambdaset = seq(0,1,length=11)
 result_train = list()
 
+# 노트북...2:13.... 언제자지...
+# 컴퓨터 13:12...
 for (i in c(1:5)){
   tmp = list()
+  mat = matfunc(ns)
+  # trainx = lapply(1:ns, function(k) xlist[[k]][-c(1:ksize)*i])
+  # trainz = lapply(1:ns, function(k) zlist[[k]][1:(ksize*4),])
+  trainx = lapply(1:ns, function(k) xlist[[k]][folds==i] )
+  trainz = lapply(1:ns, function(k) zlist[[k]][1:sum(folds==i),])
   for ( j in c(1:length(lambdaset))){
-    ns = sum(kcluster$size[-i])
-    mat = matfunc(ns)
-    tmp[[j]] <- gevreg_m(xlist[which(kcluster$cluster!=i)], zlist[which(kcluster$cluster!=i)], 
-                         lambda = lambdaset[[j]], lambda2=1, Om=Om, mat=mat, method="B-spline")
+    tmp[[j]] <- gevreg_m(xlist=trainx,zlist=trainz, 
+                         lambda = lambdaset[j], lambda2=1, Om=Om, mat=mat, method="B-spline")
   }
   result_train[[i]] <- tmp
 }
 
-result_train = result
+
+# tval <- gevreg_m(xlist=trainx,zlist=trainz,
+#                 lambda = lambdaset[1], lambda2=1, Om=Om, mat=mat, method="B-spline")
+# 
+# tmp = list()
+# for ( j in 1:11){
+#   tmp[[j]] <- tval
+# }
+# for ( i in 1:5){
+#   result_train[[i]] <- tmp
+# }
+
+lossfun = function(x,mu,s,k){
+  v = log(s)+(1+1/k)*log(1+k*(x-mu)/s)+(1+k*(x-mu)/s)^(-1/k)  
+  sum(v)
+}
+
+i=1 # validation set
+l=1 # lambda 
+s=1 # location
 
 result_validation = list()
-for (i in c(1:5)){
-  tmp = list()
-  for ( j in c(1:kcluster$size[i])){
-    tmp[[j]] <- fgev(xlist[[which(kcluster$cluster==i)[j]]])$estimate
-  }
-  result_validation[[i]] <- tmp
-}
-
-
-loclambda = list()
-for (whichlambda in c(1:length(lambdaset))){
-  loclust = list()
-  for(clust in c(1:5)) {
-    loc = c()
-    for ( i in c(1:kcluster$size[clust])){
-      j = which(kcluster$cluster==clust)[i]
-      loc[i] =  (mean(result_train[[clust]][[whichlambda]][(3*c(1:sum(kcluster$size[-clust])))-2]) + 
-              zlist[[j]]%*%tail(result_train[[clust]][[whichlambda]],25))[1]
+for (i in 1:5){
+  lset = c()
+  for( l in c(1:length(lambdaset))){
+    v = c()
+    est_z = tail(result_train[[i]][[l]],dim(zlist[[1]])[2]) 
+    for( s in 1:ns){
+      est_s = result_train[[i]][[l]][(1:3)+(3*s-3)]
+      v[s] = lossfun(xlist[[s]][c(1:8)*i],mu=c(est_s[1]+zlist[[s]][1,]%*%est_z),s=est_s[2],k=est_s[3])
     }
-    loclust[[clust]] = loc
+    lset[l] <- sum(v)
   }
-  loclambda[[whichlambda]] = loclust
+  result_validation[[i]] <- lset
 }
-loclambda
+warnings()
+
+result_validation
+
+# save(result_train,result_validation,file="kfolds=random_knots=4.RData")
+
+# result_validation = list()
+# for (i in 1:5){
+#   lset = c()
+#   for( l in c(1:length(lambdaset))){
+#     v = c()
+#     for( s in 1:ns){
+#       v[s] = 48.01299
+#     }
+#     lset[l] <- sum(v)
+#   }
+#   result_validation[[i]] <- lset
+# }
+result_validation
+
+# lambda1 min 찾기 
+validation.mat <- do.call('rbind',result_validation)
+plot(lambdaset,colMeans(validation.mat))
+lambda.min <- lambdaset[which.min(colMeans(validation.mat))]
 
 
+# 최종 적합 - train set
+test_est <- gevreg_m(xlist,zlist,lambda = lambda.min , lambda2=1, Om=Om, mat=mat, method="B-spline")
 
-mleclust = list()
-for(clust in c(1:5)) {
-  mleclust[[clust]] = unlist(lapply(1:kcluster$size[clust], function(i) {result_validation[[clust]][[i]][1]}))
-}
-
-mseloc = c() 
-for ( whichlambda in c(1:11)){
-  mseloc[whichlambda] = mean(unlist(lapply(1:5,function(i) mean((loclambda[[whichlambda]][[i]]-mleclust[[i]])^2))))
-}
-plot(lambdaset,mseloc)
-
-# save.image("train.RData")
-
-s.lambda = lambdaset[which.min(mseloc)]
-ns = length(unique(train$stnlds)) 
-train_mle = gevreg_m(xlist, zlist, lambda = s.lambda , 
-                     lambda2=1, Om=Om, mat=matfunc(ns) , method="B-spline")
-
+# 
 test_ss = split.data.frame(test,test$stnlds)
 test_xlist = lapply(test_ss,"[[","pr")
 
-test_mle = list()
-for ( i in c(1:8)) {
-  test_mle[[i]] = fgev(test_xlist[[i]])$estimate
+v=c()
+est_z = tail(test_est,25) 
+for (s in 1:ns){
+  est_s = test_est[(1:3)+(3*s-3)]
+  v[s] = lossfun(test_xlist[[s]],mu=c(est_s[1]+zlist[[s]][1,]%*%est_z),s=est_s[2],k=est_s[3])
 }
-test_xlist
+result_test <- sum(v)
