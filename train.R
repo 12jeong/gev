@@ -11,14 +11,8 @@ plot(xlong,ylat)
 
 ns = length(unique(Pr_46$stnlds)) # 56개
 
-
-# 1973~2012년 데이터를 k-folds 5개 (순서대로)
+# 1973~2012 for train, 2013~2018 for test
 train = Pr_46 %>% filter(obsyear < 2013)
-# ksize = 8
-# train$k = rep(c(1:5),each=ksize)
-set.seed(2018)
-folds = sample(cut(1:40,breaks=5,labels=FALSE),40)
-train$k = rep(folds,times=ns)
 test = Pr_46 %>% filter(obsyear >= 2013)
 
 # design matrix for v3 (m0 statinary?)
@@ -39,8 +33,8 @@ dim(matfunc(ns))
 
 ss = split.data.frame(train,train$stnlds)
 xlist = lapply(ss,"[[","pr")
-x_bsobj = create.bspline.basis(range(train$long),breaks=quantile(train$long,prob = seq(0, 1, length = 4)))
-y_bsobj = create.bspline.basis(range(train$lat),breaks=quantile(train$lat,prob = seq(0, 1, length = 4)))
+x_bsobj = create.bspline.basis(range(train$long),breaks=quantile(train$long,prob = seq(0, 1, length = 3)))
+y_bsobj = create.bspline.basis(range(train$lat),breaks=quantile(train$lat,prob = seq(0, 1, length = 3)))
 
 zlist = list()
 for (i in 1:ns){
@@ -62,28 +56,37 @@ Om = Fmat+2*Gmat+Hmat
 optim_controlList = list()
 optim_controlList$maxit = 1e+3
 
-
-
 ######### k-folds cross validation ##########
+## 순서대로 
+# ksize = 10 # number of K
+# gsize = 40/ksize
+# folds = rep(c(1:ksize),each=gsize)
+# train$k = rep(folds,times=ns)
+
+## 랜덤하게 
+set.seed(827)
+ksize = 5 # number of K
+folds = sample(cut(1:40,breaks=ksize,labels=FALSE),40)
+train$k = rep(folds,times=ns)
+
 lambdaset = seq(0,1,length=11)
 result_train = list()
 
-# 노트북...2:13.... 언제자지...
-# 컴퓨터 13:12...
+s_time <- Sys.time()
 for (i in c(1:5)){
   tmp = list()
   mat = matfunc(ns)
-  # trainx = lapply(1:ns, function(k) xlist[[k]][-c(1:ksize)*i])
-  # trainz = lapply(1:ns, function(k) zlist[[k]][1:(ksize*4),])
-  trainx = lapply(1:ns, function(k) xlist[[k]][folds==i] )
-  trainz = lapply(1:ns, function(k) zlist[[k]][1:sum(folds==i),])
+  trainx = lapply(1:ns, function(k) xlist[[k]][folds!=i] )
+  trainz = lapply(1:ns, function(k) zlist[[k]][1:(40-sum(folds==i)),])
   for ( j in c(1:length(lambdaset))){
     tmp[[j]] <- gevreg_m(xlist=trainx,zlist=trainz, 
                          lambda = lambdaset[j], lambda2=1, Om=Om, mat=mat, method="B-spline")
+      cat("i=",i," j=",j,"\n" )
   }
   result_train[[i]] <- tmp
 }
-
+e_time <- Sys.time()
+e_time-s_time
 
 # tval <- gevreg_m(xlist=trainx,zlist=trainz,
 #                 lambda = lambdaset[1], lambda2=1, Om=Om, mat=mat, method="B-spline")
@@ -123,7 +126,7 @@ warnings()
 
 result_validation
 
-# save(result_train,result_validation,file="kfolds=random_knots=4.RData")
+# save(result_train,result_validation,file="kfolds=random827_knots=4.RData")
 
 # result_validation = list()
 # for (i in 1:5){
@@ -137,18 +140,18 @@ result_validation
 #   }
 #   result_validation[[i]] <- lset
 # }
-result_validation
 
 # lambda1 min 찾기 
 validation.mat <- do.call('rbind',result_validation)
-plot(lambdaset,colMeans(validation.mat))
-lambda.min <- lambdaset[which.min(colMeans(validation.mat))]
+par(mfrow=c(1,1))
+plot(lambdaset,colMeans(validation.mat,na.rm=TRUE))
+lambda.min <- lambdaset[which.min(colMeans(validation.mat,na.rm=TRUE))]
 
 
 # 최종 적합 - train set
 test_est <- gevreg_m(xlist,zlist,lambda = lambda.min , lambda2=1, Om=Om, mat=mat, method="B-spline")
 
-# 
+# test likelihood
 test_ss = split.data.frame(test,test$stnlds)
 test_xlist = lapply(test_ss,"[[","pr")
 
