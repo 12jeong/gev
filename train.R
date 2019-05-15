@@ -29,7 +29,8 @@ matfunc = function(ns){
   mat = t(matt) %*% matt
   return(mat)
 }
-dim(matfunc(ns))
+mat = matfunc(ns)
+dim(mat)
 
 ss = split.data.frame(train,train$stnlds)
 xlist = lapply(ss,"[[","pr")
@@ -64,7 +65,7 @@ optim_controlList$maxit = 1e+3
 # train$k = rep(folds,times=ns)
 
 ## 랜덤하게 
-set.seed(827)
+set.seed(517)
 ksize = 5 # number of K
 folds = sample(cut(1:40,breaks=ksize,labels=FALSE),40)
 train$k = rep(folds,times=ns)
@@ -75,7 +76,6 @@ result_train = list()
 s_time <- Sys.time()
 for (i in c(1:5)){
   tmp = list()
-  mat = matfunc(ns)
   trainx = lapply(1:ns, function(k) xlist[[k]][folds!=i] )
   trainz = lapply(1:ns, function(k) zlist[[k]][1:(40-sum(folds==i)),])
   for ( j in c(1:length(lambdaset))){
@@ -99,6 +99,10 @@ e_time-s_time
 #   result_train[[i]] <- tmp
 # }
 
+
+
+##########################################
+
 lossfun = function(x,mu,s,k){
   v = log(s)+(1+1/k)*log(1+k*(x-mu)/s)+(1+k*(x-mu)/s)^(-1/k)  
   sum(v)
@@ -108,6 +112,7 @@ i=1 # validation set
 l=1 # lambda 
 s=1 # location
 
+# load("kfolds=random2018_knots=4.RData")
 result_validation = list()
 for (i in 1:5){
   lset = c()
@@ -118,15 +123,15 @@ for (i in 1:5){
       est_s = result_train[[i]][[l]][(1:3)+(3*s-3)]
       v[s] = lossfun(xlist[[s]][c(1:8)*i],mu=c(est_s[1]+zlist[[s]][1,]%*%est_z),s=est_s[2],k=est_s[3])
     }
+    if (any(is.na(v))) cat("NaN produced in:","validation set",i,"lambda",lambdaset[l],"location",which(is.na(v)),"\n")
     lset[l] <- sum(v)
   }
   result_validation[[i]] <- lset
 }
-warnings()
 
 result_validation
 
-# save(result_train,result_validation,file="kfolds=random827_knots=4.RData")
+# save(result_train,result_validation,file="kfolds=random527_knots=4.RData")
 
 # result_validation = list()
 # for (i in 1:5){
@@ -156,9 +161,10 @@ test_ss = split.data.frame(test,test$stnlds)
 test_xlist = lapply(test_ss,"[[","pr")
 
 v=c()
-est_z = tail(test_est,25) 
+est_z = tail(test_est,dim(zlist[[1]])) 
 for (s in 1:ns){
   est_s = test_est[(1:3)+(3*s-3)]
   v[s] = lossfun(test_xlist[[s]],mu=c(est_s[1]+zlist[[s]][1,]%*%est_z),s=est_s[2],k=est_s[3])
 }
+if (any(is.na(v))) cat("NaN produced in:","location",which(is.na(v)),"\n")
 result_test <- sum(v)
