@@ -1,13 +1,24 @@
 rm( list = ls()); gc()
 setwd("C:\\Users\\UOS\\Documents\\GITHUB\\gev")
 source("sgevlibrary.R")
-load("kma_data\\Pr_46.Rdata")
+load("Pr_46.Rdata")
 library(fda)
 library(dplyr)
 
+
+args <- (commandArgs(TRUE))
+
+file_idx <- eval(parse(text=args[1]))
+
+table.grid = expand.grid(lambda = 1:10,seed = 1:2)
+
+seed = table.grid[file_idx,]$seed
+lambda_idx = table.grid[file_idx,]$lambda
+
 ylat = unique(Pr_46$lat)
 xlong = unique(Pr_46$long)
-plot(xlong,ylat)
+
+# plot(xlong,ylat)
 
 ns = length(unique(Pr_46$stnlds)) # 56개
 
@@ -30,7 +41,7 @@ matfunc = function(ns){
   return(mat)
 }
 mat = matfunc(ns)
-dim(mat)
+# dim(mat)
 
 ss = split.data.frame(train,train$stnlds)
 xlist = lapply(ss,"[[","pr")
@@ -45,7 +56,7 @@ for (i in 1:ns){
   zlist[[i]] = tensorbs 
 }
 
-dim(zlist[[1]]) # (frist)stnlds 2D-splines tensor, nbasis = df x df
+# dim(zlist[[1]]) # (frist)stnlds 2D-splines tensor, nbasis = df x df
 
 # Omega matrix
 Fmat = kronecker(bsplinepen(x_bsobj,Lfdobj=2),bsplinepen(y_bsobj,Lfdobj=0))
@@ -65,52 +76,37 @@ optim_controlList$maxit = 1e+3
 # train$k = rep(folds,times=ns)
 
 ## 랜덤하게 
-set.seed(517)
+set.seed(seed)
 ksize = 5 # number of K
 folds = sample(cut(1:40,breaks=ksize,labels=FALSE),40)
 train$k = rep(folds,times=ns)
 
-lambdaset = seq(0,1,length=11)
+lambdaset = seq(0,1,length=10)
+
+eval(parse(text = paste0('result_train', file_idx, ' = list()')))
 result_train = list()
 
-s_time <- Sys.time()
+# s_time <- Sys.time()
 for (i in c(1:5)){
-  tmp = list()
   trainx = lapply(1:ns, function(k) xlist[[k]][folds!=i] )
   trainz = lapply(1:ns, function(k) zlist[[k]][1:(40-sum(folds==i)),])
-  for ( j in c(1:length(lambdaset))){
-    tmp[[j]] <- gevreg_m(xlist=trainx,zlist=trainz, 
-                         lambda = lambdaset[j], lambda2=1, Om=Om, mat=mat, method="B-spline")
-      cat("i=",i," j=",j,"\n" )
-  }
-  result_train[[i]] <- tmp
+  tmp <- gevreg_m(xlist=trainx,zlist=trainz,
+                       lambda = lambdaset[lambda_idx], lambda2=1, Om=Om, mat=mat, method="B-spline")
+  eval(parse(text = paste0('result_train', file_idx, '[[i]] = tmp')))
 }
-e_time <- Sys.time()
-e_time-s_time
 
-# tval <- gevreg_m(xlist=trainx,zlist=trainz,
-#                 lambda = lambdaset[1], lambda2=1, Om=Om, mat=mat, method="B-spline")
-# 
-# tmp = list()
-# for ( j in 1:11){
-#   tmp[[j]] <- tval
-# }
-# for ( i in 1:5){
-#   result_train[[i]] <- tmp
-# }
+eval(parse(text = paste0('save(result_train', file_idx,',', paste0("file =","'", paste0('result_train',file_idx,'.RData',"')")))))
+
+
 
 
 
 ##########################################
-
+# 
 lossfun = function(x,mu,s,k){
-  v = log(s)+(1+1/k)*log(1+k*(x-mu)/s)+(1+k*(x-mu)/s)^(-1/k)  
+  v = log(s)+(1+1/k)*log(1+k*(x-mu)/s)+(1+k*(x-mu)/s)^(-1/k)
   sum(v)
 }
-
-i=1 # validation set
-l=1 # lambda 
-s=1 # location
 
 # load("kfolds=random2018_knots=4.RData")
 result_validation = list()
@@ -118,7 +114,7 @@ for (i in 1:5){
   lset = c()
   for( l in c(1:length(lambdaset))){
     v = c()
-    est_z = tail(result_train[[i]][[l]],dim(zlist[[1]])[2]) 
+    est_z = tail(result_train[[i]][[l]],dim(zlist[[1]])[2])
     for( s in 1:ns){
       est_s = result_train[[i]][[l]][(1:3)+(3*s-3)]
       v[s] = lossfun(xlist[[s]][c(1:8)*i],mu=c(est_s[1]+zlist[[s]][1,]%*%est_z),s=est_s[2],k=est_s[3])
@@ -146,7 +142,7 @@ result_validation
 #   result_validation[[i]] <- lset
 # }
 
-# lambda1 min 찾기 
+# lambda1 min 찾기
 validation.mat <- do.call('rbind',result_validation)
 par(mfrow=c(1,1))
 plot(lambdaset,colMeans(validation.mat,na.rm=TRUE))
@@ -161,10 +157,17 @@ test_ss = split.data.frame(test,test$stnlds)
 test_xlist = lapply(test_ss,"[[","pr")
 
 v=c()
-est_z = tail(test_est,dim(zlist[[1]])) 
+est_z = tail(test_est,dim(zlist[[1]]))
 for (s in 1:ns){
   est_s = test_est[(1:3)+(3*s-3)]
   v[s] = lossfun(test_xlist[[s]],mu=c(est_s[1]+zlist[[s]][1,]%*%est_z),s=est_s[2],k=est_s[3])
 }
 if (any(is.na(v))) cat("NaN produced in:","location",which(is.na(v)),"\n")
 result_test <- sum(v)
+
+
+
+
+
+
+
