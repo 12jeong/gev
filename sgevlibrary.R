@@ -78,3 +78,28 @@ gevreg_m = function(xlist, zlist, lambda = 0, lambda2=0, Om=NULL, mat=NULL,
                 xlist = xlist,
                 zlist = zlist)$par) 
 }
+
+
+
+
+lossfun = function (x, loc = 0, scale = 1, shape = 0) 
+{
+  if (min(scale) <= 0) 
+    return( - 1e+6)
+  if (length(shape) != 1) 
+    stop("invalid shape")
+  x <- (x - loc)/scale
+  if (shape == 0) 
+    d <- log(1/scale) - x - exp(-x)
+  else {
+    nn <- length(x)
+    xx <- 1 + shape * x
+    xxpos <- xx[xx > 0 | is.na(xx)]
+    scale <- rep(scale, length.out = nn)[xx > 0 | is.na(xx)]
+    d <- numeric(nn)
+    d[xx > 0 | is.na(xx)] <- log(1/scale) - xxpos^(-1/shape) - 
+      (1/shape + 1) * log(xxpos)
+    d[xx <= 0 & !is.na(xx)] <- -(1e+6)
+  }
+  return(d)
+}

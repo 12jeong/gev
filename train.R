@@ -127,21 +127,6 @@ for (i in 1:5){
 
 result_validation
 
-# save(result_train,result_validation,file="kfolds=random527_knots=4.RData")
-
-# result_validation = list()
-# for (i in 1:5){
-#   lset = c()
-#   for( l in c(1:length(lambdaset))){
-#     v = c()
-#     for( s in 1:ns){
-#       v[s] = 48.01299
-#     }
-#     lset[l] <- sum(v)
-#   }
-#   result_validation[[i]] <- lset
-# }
-
 # lambda1 min 찾기
 validation.mat <- do.call('rbind',result_validation)
 par(mfrow=c(1,1))
