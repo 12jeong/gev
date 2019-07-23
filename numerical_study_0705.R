@@ -92,8 +92,9 @@ result2 = gevreg_m(xlist,zlist,
 result3 = gevreg_m(xlist,zlist,
                   lambda = 0.1, lambda2=1, Om=Om, mat=mat, method="B-spline")
 
-# save(result1,result2,result3,file="result0705.RData")
-#load("result0705.RData")
+                                    
+# save(result1,result2,result3,file="result0705.RDa")
+load("result0705.RDa")
 
 p <- ncol(zlist[[1]])
 xbss <- eval.basis(x1[s_row],x_bsobj)
