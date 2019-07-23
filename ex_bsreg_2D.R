@@ -2,9 +2,9 @@ rm(list=ls())
 library(fda)
 library(evd)
 library(Deriv)
-setwd("C:\\Users\\UOS\\Documents\\GITHUB\\gev")
-source("sgevlibrary.R")
-load("kma_data\\Pr_46.RData")
+setwd("~/GITHUB/gev")
+source("./sgevlibrary.R")
+load("./kma_data/Pr_46.RData")
 
 ss <- split.data.frame(Pr_46,Pr_46$stnlds)  # stnlds로 dataframe 쪼개서 list에 분배
 xlist <- lapply(ss,"[[","pr")               # 강수량(pr) 변수로만 이루어진 list 생성

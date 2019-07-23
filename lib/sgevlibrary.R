@@ -74,7 +74,7 @@ gevreg_m = function(xlist, zlist, lambda = 0, lambda2=0, Om=NULL, mat=NULL,
   
   
   return( optim(tvec, l2gev_m, lambda = lambda, lambda2=lambda2, Om=Om, mat=mat,
-                method = "BFGS", 
+                method = "L-BFGS-B", 
                 xlist = xlist,
                 zlist = zlist)$par) 
 }
