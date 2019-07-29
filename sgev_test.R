@@ -27,6 +27,9 @@ mu_sse = lapply(1:length(result_list), function(i) norm(result_mus[[i]]-df_mu$z,
 # lambdaset[which.min(unlist(mu_sse))]
 
 # plot 
+plot3d(x=df_mu$x1,y=df_mu$x2,z=df_mu$z)         # 3d plot for true parameter
+plot3d(x=df_mu$x1,y=df_mu$x2,z=result_mus[[1]]) # 3d plot for mus
+
 plot(df_mu$z, ylim = c(90,150), main="red,0")
 points(result_mus[[1]], col = 'red')  
 
@@ -62,7 +65,6 @@ points(result_list[[1]][3*(0:(ns-1))+3], col = 'red')
 # }
 # plot(c(1:24),-loss,type="l")
 # lambdaset[which.min(-loss)]
-
 
 # rgev for test
 testlist = list()
