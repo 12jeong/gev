@@ -1,13 +1,12 @@
-gevreg_m = function(xlist, zlist, lambda = 0, lambda2=0, Om=NULL, mat=NULL,
+gevreg_m = function(xlist, zlist, lambda = 0, Om=NULL,
                     method = c('linear', 'B-spline'))
 {
   p = ncol(zlist[[1]])
-  tvec = rep(0, ns*3 + p) # ns*mu,sigma,kappa(3), basis(p)
+  tvec = rep(0, 1 + ns*2 + p) # m_0, ns*(sigma,kappa), basis(p)
   ns = length(xlist)
   Om = Om
-  mat = mat
   
-  l2gev_m = function (tvec, lambda, xlist, zlist, Om, lambda2, mat)
+  l2gev_m = function (tvec, lambda, xlist, zlist, Om)
   {
     ns = length(xlist)
     v1 = 0
@@ -16,19 +15,17 @@ gevreg_m = function(xlist, zlist, lambda = 0, lambda2=0, Om=NULL, mat=NULL,
       x = xlist[[i]]
       z = zlist[[i]]
       loc.vec.reg = drop(z%*%tail(tvec, p))
-      loc.vec = tvec[3*(i-1)+1] + loc.vec.reg
-      sc.vec = tvec[3*(i-1)+2]
-      sh.vec = tvec[3*(i-1)+3]
+      loc.vec = tvec[1] + loc.vec.reg
+      sc.vec = tvec[2*i]
+      sh.vec = tvec[2*i+1]
       v1 = v1 - sum(lgev(x, loc = loc.vec, 
-                         scale = sc.vec, shape = sh.vec))   # loss : +(-loglikelihood)
+                          scale = sc.vec, shape = sh.vec))   # loss : +(-loglikelihood)
     }
     # loglikelihood
-    
     # regularization
     if (method == 'B-spline') {
       v2 = lambda*t(tail(tvec,p))%*%Om%*%tail(tvec,p)
-      v3 = lambda2 * t(tvec[(0:(ns-1))*3+1] ) %*% mat %*% tvec[(0:(ns-1))*3+1] 
-      v = v1 + v2 + v3
+      v = v1 + v2
     }
     
     if (method == 'linear') {
@@ -61,22 +58,21 @@ gevreg_m = function(xlist, zlist, lambda = 0, lambda2=0, Om=NULL, mat=NULL,
     return(d)
   }
   
-  
+  tmp_loc = 0
   for ( i in 1:ns)
   {
     x = xlist[[i]]
-    start <- list()
-    start$scale <- sqrt(6 * var(x))/pi
-    start$loc <- mean(x) - 0.58 * start$scale
-    tvec[3*(i-1)+1] = start$loc
-    tvec[3*(i-1)+2] = start$scale
+    fit = fgev(x)
+    tmp_loc = tmp_loc + fit$estimate[1]
+    tvec[2*i] = fit$estimate[2]
+    tvec[2*i+1] = fit$estimate[3]
   }
+  tmp_loc = tmp_loc/ns
+  tvec[1] = tmp_loc
   
-  
-  return( optim(tvec, l2gev_m, lambda = lambda, lambda2=lambda2, Om=Om, mat=mat,
-                method = "L-BFGS-B", 
-                xlist = xlist,
-                zlist = zlist)$par) 
+  fit = optim(tvec, l2gev_m, lambda = lambda,method = "BFGS", 
+              xlist = xlist, zlist = zlist, Om = Om)
+  return(fit) 
 }
 
 
