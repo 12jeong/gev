@@ -40,6 +40,7 @@ x_bsobj = create.bspline.basis(xyrange,norder=4,
                                breaks=quantile(x1,prob = seq(0, 1, length = nBS)))
 y_bsobj = create.bspline.basis(xyrange,norder=4, 
                                breaks=quantile(x2,prob = seq(0, 1, length = nBS)))
+
 zlist = list()
 for (i in 1:ns){
   xbs = eval.basis(df_mu$x1[i],x_bsobj)
@@ -47,6 +48,9 @@ for (i in 1:ns){
   tensorbs = do.call('cbind', lapply(1:ncol(xbs), function(i) xbs[, i] * ybs)) 
   zlist[[i]] = tensorbs 
 }
+xbss <- eval.basis(x1,x_bsobj)
+ybss <- eval.basis(x2,y_bsobj)
+tensorbss <- do.call('cbind', lapply(1:ncol(xbss), function(i) xbss[, i] * ybss)) 
 #sum(zlist[[3]])
 # dim(zlist[[1]]) # (frist)stnlds 2D-splines tensor, nbasis = df x df
 
@@ -81,7 +85,7 @@ mat = matfunc(ns)
 
 # to etimate model
 #lambdaset = c(seq(0,2,length=21),5,10,100)
-lambda = 1
+lambda = 0
 
 fit = gevreg_m(xlist,zlist,
                lambda = lambda, Om= Om, 
@@ -108,11 +112,13 @@ for (i in 1:ns)
   m = bb[i]
   s = a[i,1]
   k = a[i,2]
-  like = like -2*sum(dgev(x, m, s, k, log = T))
+  like = like -sum(dgev(x, m, s, k, log = T))
 }
 like
-lambda*Om
-
+Z = tensorbss
+Hmat_lambda = Z%*%solve(t(Z)%*%Z +lambda*Om)%*%t(Z)
+DF = sum(diag(Hmat_lambda))+2*ns
+2*like + log(ns*nobs)*DF
 
 # save.file for each lambda
 eval(parse(text = paste0('result', lambda_idx, ' = result')))
