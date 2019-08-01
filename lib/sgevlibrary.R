@@ -2,8 +2,8 @@ gevreg_m = function(xlist, zlist, lambda = 0, Om=NULL,
                     method = c('linear', 'B-spline'))
 {
   p = ncol(zlist[[1]])
-  tvec = rep(0, 1 + ns*2 + p) # m_0, ns*(sigma,kappa), basis(p)
   ns = length(xlist)
+  tvec = rep(0, 1 + ns*2 + p) # m_0, ns*(sigma,kappa), basis(p)
   Om = Om
   
   l2gev_m = function (tvec, lambda, xlist, zlist, Om)
