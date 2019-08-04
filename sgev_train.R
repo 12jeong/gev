@@ -5,32 +5,98 @@ source("./lib/sgevlibrary.R")
 
 # data generation
 set.seed(1)
-xyrange = c(-10,10)
 nobs = 100
 ns= 50
-nBS = 3
-
+######################## mu setting ##########################
+### setting1 : 평면 ###
+# xyrange = c(-10,10)
+# nBS = 3
 # x1 = seq(xyrange[1],xyrange[2],length=100)
 # x2 = seq(xyrange[1],xyrange[2],length=100)
 # fx = outer(x1, x2, function(x1,x2) {
-#   zval = 100+(-2*x1-3*x2)/4
+#   par_mu = 100+(-2*x1-3*x2)
 # })
-# plot_ly(x = x1, y = x2, z = fx) %>% add_surface()
+## plot_ly(x = x1, y = x2, z = fx) %>% add_surface()
 # range(fx)
+# x1 = runif(ns,xyrange[1],xyrange[2])
+# x2 = runif(ns,xyrange[1],xyrange[2])
+# par_mu = 100+(-2*x1-3*x2) # 평면
+# range(par_mu)
+# df_mu = data.frame(x1=x1,x2=x2,par_mu=par_mu)
+## plot3d(x=df_mu$x1,y=df_mu$x2,z=par_mu)
 
-x1 = runif(ns,xyrange[1],xyrange[2])
-x2 = runif(ns,xyrange[1],xyrange[2])
-zval = 100+(-2*x1-3*x2) # 평면
-range(zval)
+### setting2 : 일봉분포 ###
+# xyrange = c(-10,10)
+# nBS = 3
+# n = 30
+# x1 = seq(xyrange[1],xyrange[2],length.out=n)
+# x2 = seq(xyrange[1],xyrange[2],length.out=n)
+# mu = c(0,0)
+# sig = matrix(c(30,5,5,30),nrow=2)
+# fx = outer(x1, x2, function(x1,x2) {
+#   dmvnorm(cbind(x1,x2), mean=mu, sigma=sig)
+# })
+## plot_ly(x = x1, y = x2, z = fx) %>% add_surface()
+# 
+# set.seed(3)
+# s_ind = sort(sample(n^2,ns))
+# zval = rep(0, ns)
+# k = 1
+# for ( i in s_ind)
+# {
+#   zval[k] =fx[i]
+#   k = k + 1
+# }
+# s_col = s_ind%/%n + 1 ; s_col[s_ind%/%n == n] = n
+# s_row = s_ind%%n + 1 ; s_row[s_row == 0] = n
+# # par_mu = 85+zval*6000 # setting2_1 : 86~115
+# par_mu = 90+zval*4000 # setting2_2 : 91~110
+# df_mu = data.frame(x1=x1[s_col],x2=x2[s_row],par_mu=par_mu)
+# range(par_mu)
+# plot3d(x=df_mu$x1,y=df_mu$x2,z=par_mu)
 
-df_mu = data.frame(x1=x1,x2=x2,z=zval)
+### setting3 : 이봉분포 ###
+set.seed(1)
+nBS = 5
+xyrange = c(-10,10)
+n=100
+x1 = seq(xyrange[1],xyrange[2],length=n)
+x2 = seq(xyrange[1],xyrange[2],length=n)
+mu1 = c(5,0)
+mu2 = c(-5,0)
+sig = matrix(c(10,5,5,10),nrow=2)
+fx = outer(x1, x2, function(x1,x2) {
+  0.4*dmvnorm(cbind(x1,x2),mean=mu1, sigma=sig*1) +
+    0.6*dmvnorm(cbind(x1,x2),mean=mu2, sigma=sig*1)
+})
+# plot_ly(x = x1, y = x2, z = fx) %>% add_surface()
+
+set.seed(3)
+s_ind = sort(sample(n^2,ns))
+zval = rep(0, ns)
+k = 1
+for ( i in s_ind)
+{
+  zval[k] =fx[i]
+  k = k + 1
+}
+s_col = s_ind%/%n + 1 ; s_col[s_ind%/%n == n] = n
+s_row = s_ind%%n + 1 ; s_row[s_row == 0] = n
+par_mu = 85+zval*5000 # setting3_1 : 85~113, nBS=5
+# par_mu = 90+zval*4000 # setting3_2 : 90~112, nBS=5
+# par_mu = 95+zval*2000 # setting3_3 : 95~107, nBS=5
+range(par_mu)
+df_mu = data.frame(x1=x1[s_col],x2=x2[s_row],par_mu=par_mu)
+plot3d(x=df_mu$x1,y=df_mu$x2,z=par_mu)
+
+######################################################################
 set.seed(2)
 par_scale = rtruncnorm(ns, a=35, b=45, mean=40, sd=2)
 par_shape = runif(ns,0.1,0.25)
 
 xlist = list()
 for (i in 1:ns){
-  xlist[[i]] = rgev(nobs,loc=df_mu$z[i],scale=par_scale[i],shape=par_shape[i])
+  xlist[[i]] = rgev(nobs,loc=par_mu[i],scale=par_scale[i],shape=par_shape[i])
 }
 sum(unlist(lapply(1:length(xlist),function(x) sum(is.na(xlist[[x]])))))
 
@@ -48,10 +114,11 @@ for (i in 1:ns){
   tensorbs = do.call('cbind', lapply(1:ncol(xbs), function(i) xbs[, i] * ybs)) 
   zlist[[i]] = tensorbs 
 }
-xbss <- eval.basis(x1,x_bsobj)
-ybss <- eval.basis(x2,y_bsobj)
-tensorbss <- do.call('cbind', lapply(1:ncol(xbss), function(i) xbss[, i] * ybss)) 
-#sum(zlist[[3]])
+xbss = eval.basis(df_mu$x1,x_bsobj)
+ybss = eval.basis(df_mu$x2,y_bsobj)
+Z = do.call('cbind', lapply(1:ncol(xbss), function(i) xbss[, i] * ybss)) 
+
+# sum(zlist[[3]])
 # dim(zlist[[1]]) # (frist)stnlds 2D-splines tensor, nbasis = df x df
 
 # Omega matrix
@@ -64,64 +131,53 @@ Om = Fmat+Gmat+2*Hmat
 optim_controlList = list()
 optim_controlList$maxit = 1e+3
 
-# design matrix for v3 (mu_0 stationary)
-matfunc = function(ns){
-  matt = matrix(0,nrow=ns*(ns-1),ncol=ns)
-  k = 1
-  for (i in (1: (ns-1))){
-    for (j in ((i+1) :ns)){
-      matt[k,i] = 1
-      matt[k,j] = -1
-      k = k+1
-    }  
-  }
-  mat = t(matt) %*% matt
-  return(mat)
-}
-mat = matfunc(ns)
-
 # to save setting values
-#save(list=ls(),file="./numerical_setting.RDa")
+# save(list=ls(),file="./numerical_setting.RDa")
 
 # to etimate model
-#lambdaset = c(seq(0,2,length=21),5,10,100)
-lambda = 0
+# lambdaset = c(seq(0,2,length=21),5,10,100)
+lambda = 10
 
 fit = gevreg_m(xlist,zlist,
                lambda = lambda, Om= Om, 
                method="B-spline")
 result = fit$par
-a = matrix(result[2:(1+ns*2)], ns, 2, byrow = T)
-
-
 # scale and shape;
+a = matrix(result[2:(1+ns*2)], ns, 2, byrow = T) 
 plot(a[,1], par_scale)
 plot(a[,2], par_shape)
 
 p = length(drop(zlist[[1]]))
-b = c()
+b = c() # Z %*% beta 
 for (i in 1:length(zlist))  b[i] = sum( drop(zlist[[i]])*tail(result,p) )
-bb = b + result[1]
-plot(bb, df_mu$z)
+est_mus = b + result[1]  # ms = m0 + Z%*%beta, length(est_mus)=ns
+plot(est_mus, par_mu)
 
 # BIC and AIC
 like = 0
 for (i in 1:ns)
 {
   x = xlist[[i]]
-  m = bb[i]
+  m = est_mus[i]
   s = a[i,1]
   k = a[i,2]
-  like = like -sum(dgev(x, m, s, k, log = T))
+  like = like - sum(dgev(x, m, s, k, log = T)) #  loss + (-log likelihood)
 }
 like
-Z = tensorbss
-Hmat_lambda = Z%*%solve(t(Z)%*%Z +lambda*Om)%*%t(Z)
-DF = sum(diag(Hmat_lambda))+2*ns
-2*like + log(ns*nobs)*DF
+Hatmat= Z%*%solve(t(Z)%*%Z +lambda*Om+diag(1e-08,nrow(Om)))%*%t(Z) # 가능한가?
+DF = sum(diag(Hatmat))+2*ns
+
+AIC = 2*like + 2*DF ; AIC
+BIC = 2*like + log(ns*nobs)*DF ; BIC
 
 # save.file for each lambda
-eval(parse(text = paste0('result', lambda_idx, ' = result')))
+# eval(parse(text = paste0('result', lambda_idx, ' = result')))
+# 
+# eval(parse(text = paste0('save(result', lambda_idx,
+#                          paste0(",file =","'", paste0('./result_train',lambda_idx, '.RDa',"')")))))
 
-eval(parse(text = paste0('save(result', lambda_idx,
-                         paste0(",file =","'", paste0('./result_train',lambda_idx, '.RDa',"')")))))
+
+plot3d(df_mu$x1,df_mu$x2,est_mus)
+
+plot(df_mu$par_mu)
+points(est_mus, col = 'red')
