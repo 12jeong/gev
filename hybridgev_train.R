@@ -147,3 +147,4 @@ plot(xlist[[ns_sample[1]]]);plot(xlist[[ns_sample[2]]])
 plot(xlist[[ns_sample[3]]]);plot(xlist[[ns_sample[4]]])
 par(mfrow=c(1,1))
 
+
