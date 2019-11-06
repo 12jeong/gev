@@ -1,3 +1,16 @@
+f_density_gev=function(mu,sigma,k,x){
+  sum(log(sigma)+(1+1/k)*log(1+k*(x-mu)/sigma)+(1+k*(x-mu)/sigma)^(-1/k))
+}
+
+lossfun = function(x,mu,s,k){
+  v = log(s)+(1+1/k)*log(1+k*(x-mu)/s)+(1+k*(x-mu)/s)^(-1/k)  
+  sum(v)
+}
+
+# derivatives for mles
+Jaco1=Deriv(expression(f_density_gev(mu,s,k,x)),c("mu","s","k"))
+Hmat1=Deriv(expression(f_density_gev(mu,s,k,x)),c("mu","s","k"),n=c(hessian=2))
+expr_mle <- list (Jaco = Jaco1, Hmat = Hmat1)
 
 # Finding MLE for stationary
 GEVnewtonRaphson_step1 <- function (x, theta0, step_theta=1, expr = expr_mle, tol = 1e-06) {
