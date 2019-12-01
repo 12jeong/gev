@@ -72,7 +72,7 @@ gevreg_3m = function(xlist, zlist, lambda = c(0,0,0), Om=NULL)
   tvec[3] = tmp_sh
   
   fit = optim(tvec, l2gev_m, lambda = lambda,method = "BFGS", 
-              xlist = xlist, zlist = zlist, Om = Om)
+              xlist = xlist, zlist = zlist, Om = Om, control = list(maxit=10000))
   return(fit) 
 }
 
