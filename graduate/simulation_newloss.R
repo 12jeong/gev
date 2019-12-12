@@ -2,6 +2,13 @@ rm(list=ls())
 setwd("~/GITHUB/gev")
 source("./lib/sgev3library.R")
 source("./lib/pack.R")
+library(distrEx)
+library(RobExtremes) 
+
+
+S_num=27
+eval(parse(text = paste0("load(file =","'", paste0('./Rexport/RData_sgev3_simulation/result_scenario',S_num, '.RData',"')"))))
+
 
 # scenario Mapping
 mapa = c("Plane","Unimodal","Bimodal")
@@ -19,26 +26,26 @@ x2.test = runif(ns,xyrange[1],xyrange[2])
 mean_vec = c(0,0) 
 sig_mat = matrix(c(30,0,0,30),nrow=2)
 set.seed(202)
-set_uni = dmvnorm(cbind(x1.new,x2.new), mean=mean_vec, sigma=sig_mat)
+set_uni = dmvnorm(cbind(x1.test,x2.test), mean=mean_vec, sigma=sig_mat)
 mean_vec1 = c(5,0); mean_vec2 = c(-5,0) 
 sig_mat = matrix(c(10,0,0,10),nrow=2)
 set.seed(203)
-set_bi = 0.4*dmvnorm(cbind(x1.new,x2.new),mean=mean_vec1, sigma=sig_mat*1) +0.6*dmvnorm(cbind(x1.new,x2.new),mean=mean_vec2, sigma=sig_mat*2)
+set_bi = 0.4*dmvnorm(cbind(x1.test,x2.test),mean=mean_vec1, sigma=sig_mat*1) +0.6*dmvnorm(cbind(x1.test,x2.test),mean=mean_vec2, sigma=sig_mat*2)
 
 # location setting
-mu1.test = 100 + (-2*x1 + 3*x2) 
+mu1.test = 100 + (-2*x1.test + 3*x2.test) 
 mu2.test = 90 + set_uni*4000
 mu3.test = 90 + set_bi*3000 
 mu_set.test = data.frame(plane=mu1.test,unimodal=mu2.test,bimodal=mu3.test)
 
 # scale setting
-sc1.test = 40 + (-2*x1 + 3*x2)*0.3 
+sc1.test = 40 + (-2*x1.test + 3*x2.test)*0.3 
 sc2.test = 30 + set_uni*4000 
 sc3.test = 30 + set_bi*3000 
 sc_set.test = data.frame(plane=sc1.test,unimodal=sc2.test,bimodal=sc3.test)
 
 # shape setting
-sh1.test = 0.1+(-2*x1 + 3*x2)*0.004
+sh1.test = 0.1+(-2*x1.test + 3*x2.test)*0.004
 sh2.test = set_uni*50 
 sh3.test = set_bi*50 
 sh_set.test = data.frame(plane=sh1.test,unimodal=sh2.test,bimodal=sh3.test)
@@ -55,7 +62,7 @@ for (s in 1:ns){
 fit.test = list()
 for ( s in 1:ns){
   x = xlist.test[[s]]
-  fit.test[[s]] = fgev(x)$estimates
+  fit.test[[s]] = fgev(x)$estimate
 }  
 
 # TPS basis for test data
@@ -72,11 +79,9 @@ for (i in 1:ns){
   zlist.test[[i]] = tensorbs 
 }
 Z.test = do.call('rbind', zlist.test) 
+p = ncol(Z.test)
 
 # compute new test loss
-S_num = 10
-eval(parse(text = paste0("load(file =","'", paste0('./Rexport/RData_sgev3_simulation/result_scenario',S_num, '.RData',"')"))))
-
 hdist.test_list = list()
 for (i in 1:length(result)){
   hdist_vec = c()
@@ -90,11 +95,15 @@ for (i in 1:length(result)){
   sh.vec.hat = tvec[3] + drop(Z.test%*%sh.vec.reg)
   h_dist = 0 
     for (s in 1:ns){
-      x = GEV(loc=fit.test[[s]][1],scale=fit.test[[s]][2],shape=fit.test[[s]][3]) # RobExtremes
+      x = GEV(loc=loc.test[s],scale=sc.test[s],shape=sh.test[s]) # RobExtremes
       y = GEV(loc=loc.vec.hat[s],scale=sc.vec.hat[s],shape=sh.vec.hat[s])
       h_dist = h_dist + HellingerDist(x,y,smooth) # distrEx
     }
   hdist_vec[l] = h_dist
   }
   hdist.test_list[[i]] = hdist_vec
+  cat(i,"/")
 }
+
+eval(parse(text = paste0("save.image(file =","'", paste0('./Rexport/RData_sgev3_simulation/newloss_scenario',S_num, '.RData',"')"))))
+

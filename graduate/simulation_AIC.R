@@ -3,9 +3,14 @@ setwd("~/GITHUB/gev")
 source("./lib/sgev3library.R")
 source("./lib/pack.R")
 
-S_num = 10
+# setwd("C:/Users/UOS/Downloads")
+# source("C:/Users/UOS/Documents/GITHUB/gev/lib/sgev3library.R")
+# source("C:/Users/UOS/Documents/GITHUB/gev/lib/pack.R")
+
+S_num = 8
 
 eval(parse(text = paste0("load(file =","'", paste0('./Rexport/RData_sgev3_simulation/result_scenario',S_num, '.RData',"')"))))
+# eval(parse(text = paste0("load(file =","'", paste0('./result_scenario',S_num, '.RData',"')"))))
 
 p=length(zlist[[1]])
 
@@ -57,4 +62,4 @@ lam.min.vec = as.numeric(rownames(lam.min.table))
 lam.grid2[lam.min.vec,] # 선택된 lambda 범위 
 
 eval(parse(text = paste0("save.image(file =","'", paste0('./Rexport/RData_sgev3_simulation/AIC_scenario',S_num, '.RData',"')"))))
-
+# eval(parse(text = paste0("save.image(file =","'", paste0('./AIC_scenario',S_num, '.RData',"')"))))

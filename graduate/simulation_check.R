@@ -29,28 +29,22 @@ set.seed(103)
 set_bi = 0.4*dmvnorm(cbind(x1,x2),mean=mean_vec1, sigma=sig_mat*1) +0.6*dmvnorm(cbind(x1,x2),mean=mean_vec2, sigma=sig_mat*2)
 
 # location setting
-mu1 = 100 + (-2*x1 + 3*x2) 
-mu2 = 90 + set_uni*4000
-mu3 = 90 + set_bi*3000 
+mu1 = 100 + (-3*x1 + 3*x2)  # 61~135
+mu2 = 90 + set_uni*4000     # 91~109
+mu3 = 90 + set_bi*3000      # 90~108
 mu_set = data.frame(plane=mu1,unimodal=mu2,bimodal=mu3)
 
 # scale setting
-sc1 = 40 + (-2*x1 + 3*x2)*0.3 
-sc2 = 30 + set_uni*4000 
-sc3 = 30 + set_bi*3000 
+sc1 = 40 + (-3*x1 + 3*x2)*0.5 # 28~50
+sc2 = 30 + set_uni*4000       # 31~49
+sc3 = 30 + set_bi*3000        # 30~48
 sc_set = data.frame(plane=sc1,unimodal=sc2,bimodal=sc3)
 
-# shape setting
-# set.seed(104)
-# sh1 = runif(ns,0,0.3)
-sh1 = 0.1+(-2*x1 + 3*x2)*0.004
-range(sh1)
-plot(x1,sh1)
-
-sh2 = set_uni*50 
-sh3 = set_bi*50 
+# shape setting 
+sh1 = 0.1+(-3*x1 + 3*x2)*0.005 # -0.05~0.24
+sh2 = set_uni*50               # 0.02~0.24
+sh3 = set_bi*50                # 0.008~0.31
 sh_set = data.frame(plane=sh1,unimodal=sh2,bimodal=sh3)
-
 
 
 for (S_num in 1:9){

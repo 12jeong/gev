@@ -2,13 +2,17 @@ rm(list=ls())
 setwd("~/GITHUB/gev")
 source("./lib/sgev3library.R")
 source("./lib/pack.R")
+
+# setwd("C:/Users/UOS/Downloads")
+# source("C:/Users/UOS/Documents/GITHUB/gev/lib/sgev3library.R")
+# source("C:/Users/UOS/Documents/GITHUB/gev/lib/pack.R")
 library(distrEx)
 library(RobExtremes) 
 
-S_num = 2
+S_num = 1
 
 eval(parse(text = paste0("load(file =","'", paste0('./Rexport/RData_sgev3_simulation/AIC_scenario',S_num, '.RData',"')"))))
-
+# eval(parse(text = paste0("load(file =","'", paste0('./AIC_scenario',S_num, '.RData',"')"))))
 
 # true paramter
 loc = mu_set[,S_map[S_num,]$Var1]
@@ -49,3 +53,4 @@ hdist_mat = do.call('rbind',hdist_list)
 
 
 eval(parse(text = paste0("save.image(file =","'", paste0('./Rexport/RData_sgev3_simulation/testloss_scenario',S_num, '.RData',"')"))))
+# eval(parse(text = paste0("save.image(file =","'", paste0('./testloss_scenario',S_num, '.RData',"')"))))

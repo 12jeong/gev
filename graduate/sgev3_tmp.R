@@ -4,17 +4,19 @@ source("./lib/sgev3library.R")
 source("./lib/pack.R")
 load("./kma_data/Pr_46.RData")
 
-set.seed(2019)
-train_stnlds = sample(unique(Pr_46$stnlds),45)
-train_46 = Pr_46 %>% filter(stnlds %in% train_stnlds)
-test_46 = Pr_46 %>% filter(!stnlds %in% train_stnlds)
-ss <- split.data.frame(train_46,train_46$stnlds)  # stnlds로 dataframe 쪼개서 list에 분배
+# set.seed(518)
+# train_stnlds = sample(unique(Pr_46$stnlds),length(unique(Pr_46$stnlds))*0.8)
+# train_46 = Pr_46 %>% filter(stnlds %in% train_stnlds)
+# test_46 = Pr_46 %>% filter(!stnlds %in% train_stnlds)
+# ss <- split.data.frame(train_46,train_46$stnlds)
+ss <- split.data.frame(Pr_46,Pr_46$stnlds)  # stnlds로 dataframe 쪼개서 list에 분배
 xlist <- lapply(ss,"[[","pr")               # 강수량(pr) 변수로만 이루어진 list 생성
-ns <- length(unique(train_46$stnlds))
+ns <- length(unique(Pr_46$stnlds))
+# ns <- length(unique(train_46$stnlds))
 
 # x : long (경도) , y : lat (위도) 
-x_bsobj <- create.bspline.basis(range(train_46$long),breaks=quantile(train_46$long,prob = seq(0, 1, length = 3)))
-y_bsobj <- create.bspline.basis(range(train_46$lat),breaks=quantile(train_46$lat,prob = seq(0, 1, length = 3)))
+x_bsobj <- create.bspline.basis(range(Pr_46$long),breaks=quantile(Pr_46$long,prob = seq(0, 1, length = 3)))
+y_bsobj <- create.bspline.basis(range(Pr_46$lat),breaks=quantile(Pr_46$lat,prob = seq(0, 1, length = 3)))
 
 zlist <- list()
 for (i in 1:ns){
@@ -39,7 +41,7 @@ optim_controlList$maxit = 1e+3
 p=length(zlist[[1]])
 Z = do.call("rbind",zlist)
 
-lam_set = c(0,0.002,0.005, 0.02, 0.1, 0.3, 0.5,1, 5,100)
+lam_set = c(0,0.002,0.005, 0.02, 0.1, 0.3, 0.5)
 lam_len = length(lam_set)
 table.grid = expand.grid(1:lam_len,1:lam_len,1:lam_len)
 
@@ -48,7 +50,7 @@ optim_controlList = list()
 optim_controlList$maxit = 1e+3
 
 
-##### train set - AIC? #######
+##### train set - AIC #######
 
 s_time = Sys.time()
 result_list = list()
@@ -62,8 +64,8 @@ for (i in 1:lam_len^3){
 e_time = Sys.time()
 run_time = e_time - s_time
 
-# save.image("~/GitHub/gev/sgev3_train1003.RData")
-
+# save.image("~/GitHub/gev/sgev3_train1204.RData")
+save.image("~/GitHub/gev/sgev3_real1209.RData")
 
 ######## for cross validation ######### 
 
@@ -92,27 +94,3 @@ run_time = e_time - s_time
 
 # save.image("~/GitHub/gev/sgev3_cvtrain1001.RData")
 
-loc.vec.reg = tvec[3+(1:p)]
-sc.vec.reg = tvec[(3+p)+(1:p)]
-sh.vec.reg = tvec[(3+2*p)+(1:p)]
-loc.vec = tvec[1] + drop(Z%*%loc.vec.reg)
-sc.vec = exp(tvec[2] + drop(Z%*%sc.vec.reg))
-sh.vec = tvec[3] + drop(Z%*%sh.vec.reg)
-
-loc.vec
-sc.vec
-sh.vec
-
-point.est = unlist(lapply(xlist,function(x) fgev(x)$estimate))
-point.loc = point.est[3*(1:ns)-2]
-point.sc =  point.est[3*(1:ns)-1]
-point.sh =  point.est[3*(1:ns)]
-
-par(mfrow=c(1,3))
-plot(point.loc,loc.vec)
-plot(point.sc,sc.vec)
-plot(point.sh,sh.vec)
-
-plot(unique(train_46$lat),point.loc); points(unique(train_46$lat),loc.vec,col="red")
-plot(unique(train_46$lat),point.sc); points(unique(train_46$lat),sc.vec,col="red")
-plot(unique(train_46$lat),point.sh); points(unique(train_46$lat),sh.vec,col="red")
