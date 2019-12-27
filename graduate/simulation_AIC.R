@@ -7,7 +7,7 @@ source("./lib/pack.R")
 # source("C:/Users/UOS/Documents/GITHUB/gev/lib/sgev3library.R")
 # source("C:/Users/UOS/Documents/GITHUB/gev/lib/pack.R")
 
-S_num = 8
+S_num = 18
 
 eval(parse(text = paste0("load(file =","'", paste0('./Rexport/RData_sgev3_simulation/result_scenario',S_num, '.RData',"')"))))
 # eval(parse(text = paste0("load(file =","'", paste0('./result_scenario',S_num, '.RData',"')"))))
