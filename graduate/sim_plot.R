@@ -9,7 +9,7 @@ rainbow.n = rainbow(8, s = 1, v = 1, start = 0, end = max(1,8 - 1)/8, alpha = 0.
 colour.plot  = c("grey95","grey70","grey30")
 
 par(mfrow=c(1,1))
-S_num = 27
+S_num = 26
 eval(parse(text = paste0("load(file =","'", paste0('./Rexport/RData_sgev3_simulation/trainloss_',S_num, '.RData',"')"))))
 # eval(parse(text = paste0("load(file =","'", paste0('C:/Users/UOS/Downloads/trainloss_',S_num, '.RData',"')"))))
 
